@@ -1,0 +1,25 @@
+{
+    "name": "ESP32 PlatformIO Dev",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "platformio.platformio-ide",
+                "ms-vscode.cpptools"
+            ],
+            "settings": {
+                "terminal.integrated.shell.linux": "/bin/bash",
+                "platformio-ide.pioHomeServerHttpPort": 8008,
+                "platformio-ide.disablePIOHomeStartup": true
+            }
+        }
+    },
+    "runArgs": [
+        "--privileged"
+    ],
+    "mounts": [
+        "type=bind,source=/dev/bus/usb,target=/dev/bus/usb"
+    ],
+}
