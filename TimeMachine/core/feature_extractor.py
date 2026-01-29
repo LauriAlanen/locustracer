@@ -6,7 +6,7 @@ import json
 # Path Configuration
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SAMPLES_FOLDER = os.path.join(BASE_DIR, "..", "files", "samples", "generated")
-INPUT_FILE = os.path.join(SAMPLES_FOLDER, 'simulation_4ch_linear.wav')
+INPUT_FILE = os.path.join(SAMPLES_FOLDER, 'simulation_4ch_room.wav')
 OUTPUT_METADATA = os.path.join(SAMPLES_FOLDER, 'activity_metadata.json')
 
 

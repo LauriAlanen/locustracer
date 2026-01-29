@@ -2,72 +2,79 @@ import numpy as np
 import librosa
 import soundfile as sf
 import os
-from typing import List
+from typing import List, Tuple
 
+# --- PATH CONFIGURATION ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-SAMPLES_FOLDER = os.path.join(BASE_DIR, 'files', 'samples')
-OUTPUT_FOLDER = os.path.join(SAMPLES_FOLDER, 'generated')
+SAMPLES_FOLDER = os.path.join(BASE_DIR, "..", "files", "samples", "user")
+OUTPUT_FOLDER = os.path.join(BASE_DIR, "..", "files", "samples", "generated")
+
+# --- ROOM CONFIGURATION ---
+C = 343.0  # Speed of sound (m/s)
+# Mic coordinates: [Mic0(0,0), Mic1(5,0), Mic2(5,5), Mic3(0,5)]
+MIC_COORDS = np.array([[0, 0], [5, 0], [5, 5], [0, 5]])
 
 
-def generate_simulated_array(input_path: str, output_prefix: str, sample_delays: List[int]):
+def calculate_delays_from_pos(source_xy: Tuple[float, float], sr: int) -> List[int]:
     """
-    Generates time-shifted audio files to simulate a multi-microphone array setup.
-
-    This function takes a mono source and creates N shifted versions based on the
-    provided delays. This is used to test Time Difference of Arrival (TDOA) 
-    algorithms like GCC-PHAT in a controlled digital environment.
-
-    Args:
-        input_path (str): Path to the source mono .wav or .mkv file.
-        output_prefix (str): Filename prefix for the generated outputs.
-        sample_delays (List[int]): List of delays in samples for each microphone.
-            Example: [0, 12, 24, 36] for a 4-mic linear array.
-
-    Raises:
-        FileNotFoundError: If the input_path does not exist.
+    Calculates sample delays for 4 corner mics based on a source (x, y) position.
     """
+    distances = np.sqrt(np.sum((MIC_COORDS - source_xy)**2, axis=1))
+    times = distances / C
+
+    # We want delays relative to the FIRST mic that hears the sound
+    min_time = np.min(times)
+    relative_times = times - min_time
+
+    # Convert to integer samples
+    sample_delays = [int(t * sr) for t in relative_times]
+    return sample_delays
+
+
+def generate_room_simulation(input_path: str, output_prefix: str, source_pos: Tuple[float, float]):
+    """
+    Generates 4-channel audio representing a sound source at a specific (x, y) 
+    coordinate in a square room.
+    """
+    if not os.path.exists(input_path):
+        raise FileNotFoundError(f"Source file not found: {input_path}")
+
     y, sr = librosa.load(input_path, sr=None, mono=True)
 
-    # This prevents the 'digital click' that can mess up GCC-PHAT correlation
+    # Prevent digital clicks
     fade_len = min(100, len(y))
-    fade_in = np.linspace(0, 1, fade_len)
-    y[:fade_len] *= fade_in
+    y[:fade_len] *= np.linspace(0, 1, fade_len)
 
+    # Calculate geometry-based delays
+    sample_delays = calculate_delays_from_pos(source_pos, sr)
     max_delay = max(sample_delays)
-    print(f"[*] Processing: {os.path.basename(input_path)}")
-    print(f"[*] Sampling Rate: {sr} Hz")
+
+    print(f"[*] Simulating source at: {source_pos}")
+    print(f"[*] Calculated Delays: {sample_delays} samples")
 
     mics = []
-
     for i, delay in enumerate(sample_delays):
-        # We pad the front with 'delay' zeros.
-        # We pad the back with 'max_delay - delay' to keep all files equal length.
-        # Length consistency is vital for synchronized buffer simulation.
+        # Time-shift using zero-padding
         shifted = np.pad(y, (delay, max_delay - delay), mode='constant')
         mics.append(shifted)
 
+        # Save individual mic files (simulating separate ESP32-S3 nodes)
         chan_filename = os.path.join(
             OUTPUT_FOLDER, f"{output_prefix}_mic_{i}.wav")
         sf.write(chan_filename, shifted, sr)
-        print(f"    -> Mic {i}: {delay} sample delay saved.")
 
-    # Shape transformation: (Channel, Samples) -> (Samples, Channel) for WAV format
+    # Save master file for visualization/testing
     multi_channel = np.array(mics).T
     master_filename = os.path.join(
-        OUTPUT_FOLDER, f"{output_prefix}_4ch_linear.wav")
+        OUTPUT_FOLDER, f"{output_prefix}_4ch_room.wav")
     sf.write(master_filename, multi_channel, sr)
-    print(f"[*] Master 4-channel file saved: {master_filename}")
+    print(f"[*] Master file saved: {master_filename}")
 
 
 if __name__ == "__main__":
     os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
-    # Configuration: Simulation of 4 microphones
-    # At 48kHz, a 12-sample delay is ~0.25ms (approx 8.5cm spacing)
-    TARGET_DELAYS = [0, 12, 24, 36]
-    INPUT_FILE = os.path.join(SAMPLES_FOLDER, 'user', 'reference_audio.wav')
+    INPUT_FILE = os.path.join(SAMPLES_FOLDER, 'reference_audio.wav')
+    TARGET_POS = (1.2, 3.8)
 
-    if os.path.exists(INPUT_FILE):
-        generate_simulated_array(INPUT_FILE, 'simulation', TARGET_DELAYS)
-    else:
-        print(f"[!] Error: Reference file not found at {INPUT_FILE}")
+    generate_room_simulation(INPUT_FILE, 'simulation', TARGET_POS)

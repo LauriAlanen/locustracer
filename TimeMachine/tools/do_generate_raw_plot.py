@@ -5,7 +5,7 @@ import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SAMPLES_FOLDER = os.path.join(BASE_DIR, "..", "files", "samples", "generated")
-INPUT_FILE = os.path.join(SAMPLES_FOLDER, 'simulation_4ch_linear.wav')
+INPUT_FILE = os.path.join(SAMPLES_FOLDER, 'simulation_4ch_room.wav')
 
 
 def visualize_raw(file_path: str, start_sec: float = 0.0, duration_sec: float = 1.0):
