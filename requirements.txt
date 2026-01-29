@@ -2,3 +2,4 @@ platformio
 librosa
 numpy
 soundfile
+matplotlib
