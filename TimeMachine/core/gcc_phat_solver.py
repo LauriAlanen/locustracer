@@ -7,7 +7,7 @@ from scipy.fftpack import fft, ifft
 # Path Configuration
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SAMPLES_FOLDER = os.path.join(BASE_DIR, "..", "files", "samples", "generated")
-INPUT_FILE = os.path.join(SAMPLES_FOLDER, 'simulation_4ch_linear.wav')
+INPUT_FILE = os.path.join(SAMPLES_FOLDER, 'simulation_4ch_room.wav')
 METADATA_FILE = os.path.join(SAMPLES_FOLDER, 'activity_metadata.json')
 
 
@@ -33,7 +33,7 @@ def gcc_phat(sig, refsig, fs=1, interpolation=1):
 
     # Find the peak which represents the time delay
     shift = np.argmax(np.abs(cc)) - max_shift
-    return shift
+    return int(shift)
 
 
 def run_solver():
@@ -44,26 +44,43 @@ def run_solver():
     with open(METADATA_FILE, 'r') as f:
         meta = json.load(f)
 
+    if not os.path.exists(INPUT_FILE):
+        print(f"[!] Audio file not found: {INPUT_FILE}")
+        return
+
     data, sr = librosa.load(INPUT_FILE, sr=None, mono=False)
 
-    print(f"[*] Solving TDOA for: {os.path.basename(INPUT_FILE)}")
+    print(f"[*] Analyzing delays in: {os.path.basename(INPUT_FILE)}")
     print("-" * 40)
 
+    # Process segments and update metadata
     for i, segment in enumerate(meta['active_segments']):
         start = segment['start_sample']
         end = segment['end_sample']
 
+        # Extract the segment across all 4 channels
         chunk = data[:, start:end]
-        ref_mic = chunk[0]  # Mic 0 is our reference
+        ref_mic = chunk[0]  # Mic 0 is our reference point
 
-        print(f"Segment {i} ({start} to {end} samples):")
+        # We store delays in a list: [delay_mic1, delay_mic2, delay_mic3]
+        delays = []
 
-        # Compare each mic to the reference
+        print(f"Segment {i} ({start} to {end}):")
+
+        # Compare Mics 1, 2, and 3 to Mic 0
         for m in range(1, chunk.shape[0]):
-            delay = gcc_phat(chunk[m], ref_mic, fs=sr)
+            delay = gcc_phat(chunk[m], ref_mic)
+            delays.append(delay)
             print(f"  -> Mic {m} Delay: {delay} samples")
 
+        # Append the new data to the current segment object
+        segment['delays'] = delays
+
+    with open(METADATA_FILE, 'w') as f:
+        json.dump(meta, f, indent=4)
+
     print("-" * 40)
+    print(f"[*] Metadata updated with delays: {METADATA_FILE}")
 
 
 if __name__ == "__main__":
