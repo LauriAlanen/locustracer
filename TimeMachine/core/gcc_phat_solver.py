@@ -3,6 +3,10 @@ import librosa
 import json
 import os
 from scipy.fftpack import fft, ifft
+try:
+    from .visualization import Visualizer
+except ImportError:
+    from visualization import Visualizer
 
 # Path Configuration
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -33,7 +37,7 @@ def gcc_phat(sig, refsig, fs=1, interpolation=1):
 
     # Find the peak which represents the time delay
     shift = np.argmax(np.abs(cc)) - max_shift
-    return int(shift)
+    return int(shift), cc
 
 
 def run_solver():
@@ -53,6 +57,9 @@ def run_solver():
     print(f"[*] Analyzing delays in: {os.path.basename(INPUT_FILE)}")
     print("-" * 40)
 
+    viz_dir = os.path.join(SAMPLES_FOLDER, 'visualizations')
+    viz = Visualizer(viz_dir)
+
     # Process segments and update metadata
     for i, segment in enumerate(meta['active_segments']):
         start = segment['start_sample']
@@ -68,9 +75,15 @@ def run_solver():
         print(f"Segment {i} ({start} to {end}):")
 
         # Compare Mics 1, 2, and 3 to Mic 0
+        # Compare Mics 1, 2, and 3 to Mic 0
         for m in range(1, chunk.shape[0]):
-            delay = gcc_phat(chunk[m], ref_mic)
+            delay, cc_val = gcc_phat(chunk[m], ref_mic)
             delays.append(delay)
+            
+            # Visualize GCC-PHAT
+            if i < 5: # Limit visualizations to first 5 segments to avoid spam
+                viz.plot_gcc_phat(cc_val, delay, m, i)
+            
             print(f"  -> Mic {m} Delay: {delay} samples")
 
         # Append the new data to the current segment object

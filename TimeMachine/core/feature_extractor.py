@@ -2,6 +2,10 @@ import numpy as np
 import librosa
 import os
 import json
+try:
+    from .visualization import Visualizer
+except ImportError:
+    from visualization import Visualizer
 
 # Path Configuration
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -63,6 +67,11 @@ def extract_active_segments(file_path: str, threshold_db: int = -30, frame_lengt
             "start_sample": int(start_f * (frame_length // 2)),
             "end_sample": int(active_frames[-1] * (frame_length // 2))
         })
+
+    # Visualize results
+    viz_dir = os.path.join(SAMPLES_FOLDER, 'visualizations')
+    viz = Visualizer(viz_dir)
+    viz.plot_active_segments(ref_mic, sr, segments)
 
     # Save metadata for the GCC-PHAT Solver
     # Note that the sample indices are relative to the original audio file

@@ -2,6 +2,10 @@ import numpy as np
 import json
 import os
 from scipy.optimize import least_squares
+try:
+    from .visualization import Visualizer
+except ImportError:
+    from visualization import Visualizer
 
 # --- PATH CONFIGURATION ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -77,6 +81,10 @@ if __name__ == "__main__":
             f"[*] Found {len(segments)} active segments with pre-calculated delays.")
         print("-" * 60)
 
+        viz_dir = os.path.join(SAMPLES_FOLDER, 'visualizations')
+        viz = Visualizer(viz_dir)
+        room_dims = [np.max(MIC_COORDS[:, 0]), np.max(MIC_COORDS[:, 1])]
+
         #  through each segment and solve its position
         for i, seg in enumerate(segments):
             # Check if 'delays' key exists (to ensure solve_tdoa.py was run)
@@ -89,6 +97,10 @@ if __name__ == "__main__":
 
             # Perform Triangulation
             pos, cost = triangulate_xy(sample_delays, fs)
+            
+            # Visualize Location
+            if i < 5:
+                viz.plot_location(MIC_COORDS, pos, room_dims, i)
 
             print(
                 f"Segment {i} | Samples: {seg['start_sample']}:{seg['end_sample']}")
