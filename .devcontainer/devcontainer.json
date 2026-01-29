@@ -19,7 +19,5 @@
     "runArgs": [
         "--privileged"
     ],
-    "mounts": [
-        "type=bind,source=/dev/bus/usb,target=/dev/bus/usb"
-    ],
+    "postCreateCommand": "pip3 install -r requirements.txt"
 }
