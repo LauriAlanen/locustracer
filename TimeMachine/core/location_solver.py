@@ -69,6 +69,47 @@ def triangulate_xy(sample_delays, sample_rate):
     return res.x, res.cost
 
 
+def compute_locations(active_segments, sample_rate, mic_coords, room_dims, visualizer=None):
+    """
+    Computes location for each active segment using triangulation.
+    """
+    print(f"[*] Found {len(active_segments)} active segments with pre-calculated delays.")
+    print("-" * 60)
+    
+    results = []
+
+    # Iterate through each segment and solve its position
+    for i, seg in enumerate(active_segments):
+        # Check if 'delays' key exists (to ensure solve_tdoa.py was run)
+        if 'delays' not in seg:
+            print(f"[!] Segment {i} has no delay data. Run solve_tdoa.py first.")
+            continue
+
+        sample_delays = seg['delays']
+
+        # Perform Triangulation
+        pos, cost = triangulate_xy(sample_delays, sample_rate)
+        
+        # Visualize Location
+        if visualizer and i < 5:
+            visualizer.plot_location(mic_coords, pos, room_dims, i)
+
+        results.append({
+            "segment_idx": i,
+            "position": pos.tolist(),
+            "cost": cost
+        })
+
+        print(
+            f"Segment {i} | Samples: {seg['start_sample']}:{seg['end_sample']}")
+        print(f"  -> Input Delays: {sample_delays} samples")
+        print(
+            f"  -> Result: X = {pos[0]:.3f}m, Y = {pos[1]:.3f}m (Residual Error: {cost:.6f})")
+        print("-" * 60)
+        
+    return results
+
+
 if __name__ == "__main__":
     try:
         metadata = load_system_metadata(METADATA_FILE)
@@ -77,37 +118,12 @@ if __name__ == "__main__":
 
         print(
             f"[*] System Config: {fs} Hz | Room: {np.max(MIC_COORDS[:,0])}x{np.max(MIC_COORDS[:,1])}m")
-        print(
-            f"[*] Found {len(segments)} active segments with pre-calculated delays.")
-        print("-" * 60)
-
+        
         viz_dir = os.path.join(SAMPLES_FOLDER, 'visualizations')
         viz = Visualizer(viz_dir)
         room_dims = [np.max(MIC_COORDS[:, 0]), np.max(MIC_COORDS[:, 1])]
-
-        #  through each segment and solve its position
-        for i, seg in enumerate(segments):
-            # Check if 'delays' key exists (to ensure solve_tdoa.py was run)
-            if 'delays' not in seg:
-                print(
-                    f"[!] Segment {i} has no delay data. Run solve_tdoa.py first.")
-                continue
-
-            sample_delays = seg['delays']
-
-            # Perform Triangulation
-            pos, cost = triangulate_xy(sample_delays, fs)
-            
-            # Visualize Location
-            if i < 5:
-                viz.plot_location(MIC_COORDS, pos, room_dims, i)
-
-            print(
-                f"Segment {i} | Samples: {seg['start_sample']}:{seg['end_sample']}")
-            print(f"  -> Input Delays: {sample_delays} samples")
-            print(
-                f"  -> Result: X = {pos[0]:.3f}m, Y = {pos[1]:.3f}m (Residual Error: {cost:.6f})")
-            print("-" * 60)
+        
+        compute_locations(segments, fs, MIC_COORDS, room_dims, viz)
 
     except Exception as e:
         print(f"[!] Error: {e}")

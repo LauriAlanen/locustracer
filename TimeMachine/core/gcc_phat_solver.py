@@ -40,6 +40,47 @@ def gcc_phat(sig, refsig, fs=1, interpolation=1):
     return int(shift), cc
 
 
+def compute_delays(data, active_segments, visualizer=None):
+    """
+    Computes time delays for each active segment using GCC-PHAT.
+    
+    Args:
+        data: Multi-channel audio data (numpy array).
+        active_segments: List of segment dictionaries.
+        visualizer: Optional Visualizer instance.
+        
+    Returns:
+        List of active segments with 'delays' added.
+    """
+    print(f"[*] Analyzing delays for {len(active_segments)} segments...")
+
+    # Process segments and update metadata
+    for i, segment in enumerate(active_segments):
+        start = segment['start_sample']
+        end = segment['end_sample']
+
+        # Extract the segment across all 4 channels
+        chunk = data[:, start:end]
+        ref_mic = chunk[0]  # Mic 0 is our reference point
+
+        # We store delays in a list: [delay_mic1, delay_mic2, delay_mic3]
+        delays = []
+
+        # Compare Mics 1, 2, and 3 to Mic 0
+        for m in range(1, chunk.shape[0]):
+            delay, cc_val = gcc_phat(chunk[m], ref_mic)
+            delays.append(delay)
+            
+            # Visualize GCC-PHAT
+            if visualizer and i < 5: # Limit visualizations to first 5 segments
+                visualizer.plot_gcc_phat(cc_val, delay, m, i)
+
+        # Append the new data to the current segment object
+        segment['delays'] = delays
+    
+    return active_segments
+
+
 def run_solver():
     if not os.path.exists(METADATA_FILE):
         print("[!] No metadata found. Run the Feature Extractor first.")
@@ -60,34 +101,8 @@ def run_solver():
     viz_dir = os.path.join(SAMPLES_FOLDER, 'visualizations')
     viz = Visualizer(viz_dir)
 
-    # Process segments and update metadata
-    for i, segment in enumerate(meta['active_segments']):
-        start = segment['start_sample']
-        end = segment['end_sample']
-
-        # Extract the segment across all 4 channels
-        chunk = data[:, start:end]
-        ref_mic = chunk[0]  # Mic 0 is our reference point
-
-        # We store delays in a list: [delay_mic1, delay_mic2, delay_mic3]
-        delays = []
-
-        print(f"Segment {i} ({start} to {end}):")
-
-        # Compare Mics 1, 2, and 3 to Mic 0
-        # Compare Mics 1, 2, and 3 to Mic 0
-        for m in range(1, chunk.shape[0]):
-            delay, cc_val = gcc_phat(chunk[m], ref_mic)
-            delays.append(delay)
-            
-            # Visualize GCC-PHAT
-            if i < 5: # Limit visualizations to first 5 segments to avoid spam
-                viz.plot_gcc_phat(cc_val, delay, m, i)
-            
-            print(f"  -> Mic {m} Delay: {delay} samples")
-
-        # Append the new data to the current segment object
-        segment['delays'] = delays
+    # Compute delays
+    compute_delays(data, meta['active_segments'], viz)
 
     with open(METADATA_FILE, 'w') as f:
         json.dump(meta, f, indent=4)
