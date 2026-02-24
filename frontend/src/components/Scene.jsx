@@ -4,12 +4,14 @@ import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import Room from './Room';
 import Microphone from './Microphone';
 import ParticleSource from './ParticleSource';
-import { ROOM_DIMS, MIC_POSITIONS, pipelineResults } from '../data/pipelineResults';
 
-export default function Scene() {
+export default function Scene({ config, results }) {
+    const room = config.room;
+    const mics = config.microphones;
+
     // Get the first source location from results
-    const source = pipelineResults.locations[0];
-    // Convert 2D (x, y) → 3D (x, height, z). We place source at y=1.2m above floor
+    const source = results.locations[0];
+    // Convert 2D (x, y) → 3D (x, height, z). Place source at y=1.2m above floor
     const sourcePos = [source.position[0], 1.2, source.position[1]];
 
     return (
@@ -30,18 +32,18 @@ export default function Scene() {
             {/* Atmosphere */}
             <fog attach="fog" args={['#06060c', 15, 35]} />
 
-            {/* Lighting - boosted for visibility */}
+            {/* Lighting */}
             <ambientLight intensity={0.3} color="#8890a4" />
-            <pointLight position={[2.5, 5, 2.5]} intensity={0.8} color="#4da6ff" distance={20} decay={2} />
+            <pointLight position={[room.width / 2, 5, room.depth / 2]} intensity={0.8} color="#4da6ff" distance={20} decay={2} />
             <pointLight position={[source.position[0], 3, source.position[1]]} intensity={1.0} color="#ff8c42" distance={12} decay={2} />
             <pointLight position={[0, 2, 0]} intensity={0.3} color="#4da6ff" distance={10} decay={2} />
-            <pointLight position={[5, 2, 5]} intensity={0.3} color="#4da6ff" distance={10} decay={2} />
+            <pointLight position={[room.width, 2, room.depth]} intensity={0.3} color="#4da6ff" distance={10} decay={2} />
 
             {/* Room */}
-            <Room width={ROOM_DIMS.width} depth={ROOM_DIMS.depth} height={ROOM_DIMS.height} />
+            <Room width={room.width} depth={room.depth} height={room.height} />
 
             {/* Microphones */}
-            {MIC_POSITIONS.map((mic) => (
+            {mics.map((mic) => (
                 <Microphone
                     key={mic.id}
                     position={mic.position}
@@ -53,8 +55,8 @@ export default function Scene() {
             {/* Sound Source */}
             <ParticleSource position={sourcePos} />
 
-            {/* Connection lines from source to each mic (faint) */}
-            {MIC_POSITIONS.map((mic) => {
+            {/* Connection lines from source to each mic */}
+            {mics.map((mic) => {
                 const points = [
                     sourcePos[0], sourcePos[1], sourcePos[2],
                     mic.position[0], 0.15, mic.position[1],
@@ -76,7 +78,7 @@ export default function Scene() {
 
             {/* Camera Controls */}
             <OrbitControls
-                target={[2.5, 0.8, 2.5]}
+                target={[room.width / 2, 0.8, room.depth / 2]}
                 enableDamping
                 dampingFactor={0.05}
                 minDistance={3}

@@ -1,8 +1,7 @@
-import { pipelineResults, MIC_POSITIONS } from '../data/pipelineResults';
-
-export default function InfoPanel() {
-    const source = pipelineResults.locations[0];
-    const segment = pipelineResults.processed_segments[0];
+export default function InfoPanel({ config, results }) {
+    const source = results.locations[0];
+    const segment = results.processed_segments[0];
+    const mics = config.microphones;
 
     return (
         <>
@@ -30,7 +29,7 @@ export default function InfoPanel() {
                 </div>
                 <div className="info-row">
                     <span className="info-label">Sample Rate</span>
-                    <span className="info-value">{(pipelineResults.sample_rate / 1000).toFixed(1)} kHz</span>
+                    <span className="info-value">{(results.sample_rate / 1000).toFixed(1)} kHz</span>
                 </div>
                 <div className="info-row">
                     <span className="info-label">Delays (samples)</span>
@@ -41,7 +40,7 @@ export default function InfoPanel() {
             {/* Microphone Legend */}
             <div className="mic-legend">
                 <h3>Microphones</h3>
-                {MIC_POSITIONS.map((mic) => (
+                {mics.map((mic) => (
                     <div key={mic.id} className="mic-item">
                         <span className="mic-dot" />
                         <span>{mic.label}</span>

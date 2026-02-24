@@ -3,3 +3,6 @@ librosa
 numpy
 soundfile
 matplotlib
+scipy
+fastapi
+uvicorn[standard]
