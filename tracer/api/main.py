@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from tracer.api.routers import system, tracer
+from tracer.api.routers import system, tracer, simulation
 
 
 @asynccontextmanager
@@ -47,6 +47,7 @@ app.add_middleware(
 # ── Routers ─────────────────────────────────────────────────────────
 app.include_router(system.router, prefix="/api")
 app.include_router(tracer.router, prefix="/api")
+app.include_router(simulation.router, prefix="/api")
 
 
 @app.get("/", include_in_schema=False)
