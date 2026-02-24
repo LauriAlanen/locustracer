@@ -58,3 +58,47 @@ export async function checkHealth() {
   if (!res.ok) throw new Error(`Health check failed: ${res.statusText}`);
   return res.json();
 }
+
+/**
+ * Stream simulation frames via Server-Sent Events.
+ * @param {Object} options - shape, steps, speed, sample_rate, interval_ms
+ * @param {Function} onFrame - Callback for each frame: (frame) => void
+ * @param {Function} onStart - Callback for stream start: (info) => void
+ * @param {Function} onEnd - Callback for stream end: () => void
+ * @param {Function} onError - Callback for errors: (error) => void
+ * @returns {Function} Abort function to stop the stream
+ */
+export function streamSimulation({ options = {}, onFrame, onStart, onEnd, onError }) {
+  const params = new URLSearchParams({
+    shape: options.shape || 'circle',
+    steps: String(options.steps || 100),
+    speed: String(options.speed || 0.5),
+    sample_rate: String(options.sample_rate || 44100),
+    interval_ms: String(options.interval_ms || 200),
+  });
+
+  const eventSource = new EventSource(`${API_BASE}/simulation/stream?${params}`);
+
+  eventSource.addEventListener('start', (e) => {
+    const data = JSON.parse(e.data);
+    onStart?.(data);
+  });
+
+  eventSource.addEventListener('frame', (e) => {
+    const frame = JSON.parse(e.data);
+    onFrame?.(frame);
+  });
+
+  eventSource.addEventListener('end', (e) => {
+    onEnd?.();
+    eventSource.close();
+  });
+
+  eventSource.onerror = (e) => {
+    onError?.(e);
+    eventSource.close();
+  };
+
+  // Return abort function
+  return () => eventSource.close();
+}

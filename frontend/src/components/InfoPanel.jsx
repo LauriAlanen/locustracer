@@ -1,4 +1,4 @@
-export default function InfoPanel({ config, results }) {
+export default function InfoPanel({ config, results, simActive }) {
     const source = results.locations[0];
     const segment = results.processed_segments[0];
     const mics = config.microphones;
@@ -10,9 +10,9 @@ export default function InfoPanel({ config, results }) {
                 <h3>Sound Source</h3>
                 <div className="info-row">
                     <span className="info-label">Status</span>
-                    <span className="status-badge">
+                    <span className={`status-badge ${simActive ? 'status-badge--sim' : ''}`}>
                         <span className="status-dot" />
-                        Detected
+                        {simActive ? 'Simulating' : 'Detected'}
                     </span>
                 </div>
                 <div className="info-row">

@@ -19,7 +19,9 @@
   box-sizing: border-box;
 }
 
-html, body, #root {
+html,
+body,
+#root {
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -32,7 +34,14 @@ html, body, #root {
 .app-container {
   width: 100%;
   height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.canvas-wrapper {
+  flex: 1;
   position: relative;
+  min-height: 0;
 }
 
 .canvas-container {
@@ -176,8 +185,17 @@ html, body, #root {
 }
 
 @keyframes pulse-dot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(0.8); }
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
 }
 
 /* Mic legend */
@@ -231,7 +249,7 @@ html, body, #root {
 /* Controls hint */
 .controls-hint {
   position: absolute;
-  top: 24px;
+  top: 60px;
   right: 24px;
   z-index: 10;
   font-size: 11px;
@@ -244,6 +262,7 @@ html, body, #root {
 .controls-hint kbd {
   display: inline-block;
   padding: 2px 6px;
+  margin: 2px 0px;
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -274,7 +293,9 @@ html, body, #root {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .error-text {
@@ -289,4 +310,177 @@ html, body, #root {
   background: rgba(255, 255, 255, 0.06);
   padding: 4px 8px;
   border-radius: 4px;
+}
+
+/* Simulation controls */
+.sim-controls {
+  position: absolute;
+  top: 70px;
+  left: 28px;
+  z-index: 10;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  pointer-events: auto;
+}
+
+.sim-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: var(--bg-card);
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e8eaf0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 14px;
+  border: 1px solid var(--border-glow);
+  border-radius: 8px;
+  color: var(--text-primary);
+  padding: 6px 34px 6px 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  outline: none;
+  text-transform: capitalize;
+}
+
+.sim-select:hover {
+  border-color: var(--accent-blue);
+}
+
+.sim-btn {
+  background: rgba(77, 166, 255, 0.12);
+  border: 1px solid rgba(77, 166, 255, 0.3);
+  border-radius: 8px;
+  color: var(--accent-blue);
+  padding: 6px 16px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  backdrop-filter: blur(12px);
+}
+
+.sim-btn:hover {
+  background: rgba(77, 166, 255, 0.2);
+  border-color: var(--accent-blue);
+}
+
+.sim-btn--active {
+  background: rgba(248, 113, 113, 0.12);
+  border-color: rgba(248, 113, 113, 0.3);
+  color: var(--accent-red);
+}
+
+.sim-btn--active:hover {
+  background: rgba(248, 113, 113, 0.2);
+}
+
+/* Simulation status badge variant */
+.status-badge--sim {
+  background: rgba(255, 140, 66, 0.1);
+  color: var(--accent-orange);
+  border: 1px solid rgba(255, 140, 66, 0.2);
+}
+
+.status-badge--sim .status-dot {
+  background: var(--accent-orange);
+}
+
+/* Dev Log */
+.dev-log {
+  flex-shrink: 0;
+  z-index: 20;
+  background: rgba(10, 10, 18, 0.98);
+}
+
+.dev-log__toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  background: rgba(10, 10, 18, 0.95);
+  border: none;
+  border-top: 1px solid var(--border-glow);
+  color: var(--text-secondary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.dev-log__toggle:hover {
+  background: rgba(15, 15, 30, 0.95);
+}
+
+.dev-log__icon {
+  color: var(--accent-green);
+  font-weight: 600;
+}
+
+.dev-log__count {
+  background: rgba(77, 166, 255, 0.15);
+  color: var(--accent-blue);
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-size: 10px;
+}
+
+.dev-log__chevron {
+  margin-left: auto;
+  font-size: 9px;
+}
+
+.dev-log__entries {
+  max-height: 200px;
+  overflow-y: auto;
+  background: rgba(6, 6, 12, 0.97);
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 4px 0;
+}
+
+.dev-log__entries::-webkit-scrollbar {
+  width: 4px;
+}
+
+.dev-log__entries::-webkit-scrollbar-thumb {
+  background: rgba(77, 166, 255, 0.2);
+  border-radius: 2px;
+}
+
+.dev-log__entry {
+  display: flex;
+  gap: 10px;
+  padding: 3px 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.dev-log__entry:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.dev-log__time {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.dev-log__level {
+  flex-shrink: 0;
+  font-weight: 600;
+}
+
+.dev-log__msg {
+  color: var(--text-secondary);
+  word-break: break-all;
+}
+
+.dev-log__empty {
+  padding: 12px 16px;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: center;
 }
