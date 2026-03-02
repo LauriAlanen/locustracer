@@ -12,4 +12,9 @@
  */
 void wifi_manager_init(void);
 
+/**
+ * @brief Wait for the Wi-Fi connection to be established and IP assigned.
+ */
+void wifi_wait_for_connection(void);
+
 #endif // WIFI_MANAGER_H
