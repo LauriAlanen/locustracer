@@ -5,6 +5,7 @@
 #include "esp_log.h"
 #include "nvs_flash.h"
 #include "wifi_manager.h"
+#include "tsf_sender.h"
 
 #define BLINK_GPIO 38
 
@@ -20,6 +21,14 @@ void app_main(void)
 
     // Initialize WiFi
     wifi_manager_init();
+    
+    // Wait for WiFi connection to establish
+    printf("Waiting for Wi-Fi connection...\n");
+    wifi_wait_for_connection();
+    printf("Wi-Fi Connected!\n");
+
+    // Initialize TSF UDP Broadcaster Task
+    tsf_sender_init();
 
     gpio_reset_pin(BLINK_GPIO);
     gpio_set_direction(BLINK_GPIO, GPIO_MODE_OUTPUT);

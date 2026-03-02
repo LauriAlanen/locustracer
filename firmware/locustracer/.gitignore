@@ -6,3 +6,4 @@
 
 # Secret Configurations
 include/wifi_config.h
+*.csv
