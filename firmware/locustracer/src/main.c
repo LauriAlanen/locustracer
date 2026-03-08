@@ -6,6 +6,7 @@
 #include "nvs_flash.h"
 #include "wifi_manager.h"
 #include "tsf_sender.h"
+#include "mic_reader.h"
 
 #define BLINK_GPIO 38
 
@@ -29,6 +30,9 @@ void app_main(void)
 
     // Initialize TSF UDP Broadcaster Task
     tsf_sender_init();
+
+    // Initialize microphone reader
+    mic_reader_init();
 
     gpio_reset_pin(BLINK_GPIO);
     gpio_set_direction(BLINK_GPIO, GPIO_MODE_OUTPUT);
