@@ -4,7 +4,7 @@ import sys
 # Ensure we can import from core
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-from core.time_machine import TimeMachine
+from core.solver.time_machine import TimeMachine
 
 def test_pipeline():
     # Define paths

@@ -4,7 +4,9 @@
 #include "freertos/task.h"
 #include "driver/i2s_std.h"
 #include "esp_log.h"
+#include "esp_wifi.h"
 #include <stdlib.h>
+#include "audio_transmitter.h"
 
 static const char *TAG = "MicReader";
 
@@ -13,7 +15,8 @@ static i2s_chan_handle_t rx_chan;
 static void mic_reader_task(void *pvParameters) {
     ESP_LOGI(TAG, "Microphone reader task started");
 
-    const size_t read_frames = 1024;
+    // We want our chunks to match the maximum packet size (256 frames = 1024 bytes)
+    const size_t read_frames = 256;
     const size_t alloc_bytes = read_frames * sizeof(int32_t);
     int32_t *raw_samples = malloc(alloc_bytes);
     if (!raw_samples) {
@@ -29,9 +32,17 @@ static void mic_reader_task(void *pvParameters) {
         // Read raw data from I2S DMA buffer
         esp_err_t res = i2s_channel_read(rx_chan, raw_samples, alloc_bytes, &bytes_read, portMAX_DELAY);
         if (res == ESP_OK) {
+            // Get the TSF time immediately after the blocking read completes.
+            // This timestamp roughly corresponds to the end of the acquired buffer.
+            uint64_t current_tsf = esp_wifi_get_tsf_time(WIFI_IF_STA);
+            
+            int samples_read = bytes_read / sizeof(int32_t);
+
+            // Send to Python Backend
+            audio_transmitter_send(raw_samples, samples_read, current_tsf);
+
             // Calculate a simple peak volume to verify data is arriving
             int32_t peak = 0;
-            int samples_read = bytes_read / sizeof(int32_t);
             
             for (int i = 0; i < samples_read; i++) {
                 // The INMP441 provides 24-bit data.
@@ -49,10 +60,10 @@ static void mic_reader_task(void *pvParameters) {
                 }
             }
 
-            // Print the peak volume every ~500ms (assuming 48kHz and 1024 frames per chunk)
-            // 48000 / 1024 ~= 46 chunks per second
-            if (++loop_counter >= 23) {
-                ESP_LOGI(TAG, "Audio Peak Vol: %ld", (long)peak);
+            // Print the peak volume every ~1000ms (assuming 48kHz and 256 frames per chunk)
+            // 48000 / 256 = 187.5 chunks per second
+            if (++loop_counter >= 187) {
+                ESP_LOGI(TAG, "Audio Peak Vol: %ld | TSF: %llu", (long)peak, current_tsf);
                 loop_counter = 0;
             }
             
@@ -66,8 +77,8 @@ void mic_reader_init(void) {
     ESP_LOGI(TAG, "Initializing I2S Standard for INMP441...");
 
     i2s_chan_config_t rx_chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_AUTO, I2S_ROLE_MASTER);
-    rx_chan_cfg.dma_desc_num = 6;
-    rx_chan_cfg.dma_frame_num = 1024;
+    rx_chan_cfg.dma_desc_num = 12; // Increase DMA descriptors because chunks are smaller (256 frames)
+    rx_chan_cfg.dma_frame_num = 256;
     ESP_ERROR_CHECK(i2s_new_channel(&rx_chan_cfg, NULL, &rx_chan));
 
     i2s_std_config_t rx_std_cfg = {
