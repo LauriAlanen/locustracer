@@ -30,7 +30,7 @@ void app_main(void)
     printf("Wi-Fi Connected!\n");
 
     // Initialize TSF UDP Broadcaster Task
-    tsf_sender_init();
+    //tsf_sender_init();
 
     // Initialize audio payload transmitter
     audio_transmitter_init();
