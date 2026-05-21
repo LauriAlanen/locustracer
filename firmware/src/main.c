@@ -4,6 +4,7 @@
 #include "driver/gpio.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
+#include "esp_ota_ops.h"
 #include "wifi_manager.h"
 #include "tsf_sender.h"
 #include "mic_reader.h"
@@ -29,6 +30,9 @@ void app_main(void)
     printf("Waiting for Wi-Fi connection...\n");
     wifi_wait_for_connection();
     printf("Wi-Fi Connected!\n");
+
+    // We successfully booted and connected to Wi-Fi. Mark this firmware as valid so it won't roll back.
+    esp_ota_mark_app_valid_cancel_rollback();
 
     // Initialize OTA update server
     ota_manager_init();
