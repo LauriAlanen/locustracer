@@ -8,6 +8,7 @@
 #include "tsf_sender.h"
 #include "mic_reader.h"
 #include "audio_transmitter.h"
+#include "ota_manager.h"
 
 #define BLINK_GPIO 21
 
@@ -29,6 +30,9 @@ void app_main(void)
     wifi_wait_for_connection();
     printf("Wi-Fi Connected!\n");
 
+    // Initialize OTA update server
+    ota_manager_init();
+
     // Initialize TSF UDP Broadcaster Task
     //tsf_sender_init();
 
@@ -43,9 +47,9 @@ void app_main(void)
 
     while (1) {
         gpio_set_level(BLINK_GPIO, 1);
-        vTaskDelay(100 / portTICK_PERIOD_MS);
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
 
         gpio_set_level(BLINK_GPIO, 0);
-        vTaskDelay(100 / portTICK_PERIOD_MS);
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 }
