@@ -6,3 +6,6 @@
 *.csv
 wifi_config.h
 sdkconfig.*
+!partitions.csv
+managed_components/
+*.lock
