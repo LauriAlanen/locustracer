@@ -21,4 +21,7 @@ RUN groupadd -f dialout && groupadd -f plugdev \
 
 RUN pip install --upgrade pip
 
+RUN mkdir -p /home/${USERNAME}/.vscode-server/extensions /home/${USERNAME}/.platformio \
+    && chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}/.vscode-server /home/${USERNAME}/.platformio
+
 USER ${USERNAME}

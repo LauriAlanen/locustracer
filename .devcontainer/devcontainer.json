@@ -3,6 +3,9 @@
     "build": {
         "dockerfile": "Dockerfile"
     },
+    "forwardPorts": [
+        8008
+    ],
     "customizations": {
         "vscode": {
             "extensions": [
@@ -12,12 +15,15 @@
             "settings": {
                 "terminal.integrated.shell.linux": "/bin/bash",
                 "platformio-ide.pioHomeServerHttpPort": 8008,
-                "platformio-ide.disablePIOHomeStartup": true
             }
         }
     },
     "runArgs": [
         "--privileged"
     ],
-    "postCreateCommand": "pip3 install -r requirements.txt"
+    "postCreateCommand": "pip3 install -r requirements.txt",
+    "mounts": [
+        "source=platformio-core-cache,target=/home/vscode/.platformio,type=volume",
+        "source=vscode-extensions-cache,target=/home/vscode/.vscode-server/extensions,type=volume"
+    ]
 }

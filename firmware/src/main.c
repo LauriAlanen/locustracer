@@ -9,7 +9,7 @@
 #include "mic_reader.h"
 #include "audio_transmitter.h"
 
-#define BLINK_GPIO 38
+#define BLINK_GPIO 21
 
 void app_main(void)
 {
@@ -43,9 +43,9 @@ void app_main(void)
 
     while (1) {
         gpio_set_level(BLINK_GPIO, 1);
-        vTaskDelay(500 / portTICK_PERIOD_MS);
+        vTaskDelay(100 / portTICK_PERIOD_MS);
 
         gpio_set_level(BLINK_GPIO, 0);
-        vTaskDelay(500 / portTICK_PERIOD_MS);
+        vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 }
