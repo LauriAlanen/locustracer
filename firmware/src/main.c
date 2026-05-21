@@ -10,8 +10,27 @@
 #include "mic_reader.h"
 #include "audio_transmitter.h"
 #include "ota_manager.h"
+#include "mdns.h"
+#include "esp_mac.h"
 
 #define BLINK_GPIO 21
+
+static void init_mdns(void)
+{
+    ESP_ERROR_CHECK(mdns_init());
+    
+    uint8_t mac[6];
+    esp_read_mac(mac, ESP_MAC_WIFI_STA);
+    char hostname[32];
+    snprintf(hostname, sizeof(hostname), "locustracer-%02x%02x", mac[4], mac[5]);
+    
+    ESP_ERROR_CHECK(mdns_hostname_set(hostname));
+    ESP_ERROR_CHECK(mdns_instance_name_set("Locustracer Node"));
+
+    mdns_service_add(NULL, "_http", "_tcp", 80, NULL, 0);
+
+    ESP_LOGI("mDNS", "mDNS initialized. Hostname: %s.local", hostname);
+}
 
 void app_main(void)
 {
@@ -33,6 +52,9 @@ void app_main(void)
 
     // We successfully booted and connected to Wi-Fi. Mark this firmware as valid so it won't roll back.
     esp_ota_mark_app_valid_cancel_rollback();
+
+    // Initialize mDNS so we can find this node via locustracer-XXXX.local
+    init_mdns();
 
     // Initialize OTA update server
     ota_manager_init();
