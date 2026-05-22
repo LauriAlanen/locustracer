@@ -17,4 +17,16 @@ void wifi_manager_init(void);
  */
 void wifi_wait_for_connection(void);
 
+/**
+ * @brief Check if the Wi-Fi connection is currently established.
+ *
+ * @return true if connected, false otherwise.
+ */
+bool wifi_is_connected(void);
+
+/**
+ * @brief Clear saved credentials and force ESP-NOW provisioning mode.
+ */
+void wifi_manager_start_provisioning(void);
+
 #endif // WIFI_MANAGER_H

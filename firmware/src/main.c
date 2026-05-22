@@ -72,10 +72,12 @@ void app_main(void)
     gpio_set_direction(BLINK_GPIO, GPIO_MODE_OUTPUT);
 
     while (1) {
+        uint32_t delay_ms = wifi_is_connected() ? 1000 : 250;
+
         gpio_set_level(BLINK_GPIO, 1);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        vTaskDelay(delay_ms / portTICK_PERIOD_MS);
 
         gpio_set_level(BLINK_GPIO, 0);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        vTaskDelay(delay_ms / portTICK_PERIOD_MS);
     }
 }
