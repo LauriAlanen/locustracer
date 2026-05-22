@@ -1,6 +1,8 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
+from typing import List
 import uvicorn
+import json
 
 app = FastAPI(
     title="Locus API Mock Server",
@@ -24,6 +26,7 @@ class ConfigData(BaseModel):
 # Store the latest telemetry
 latest_telemetry = None
 
+
 @app.post("/telemetry")
 def push_telemetry(data: TelemetryData):
     global latest_telemetry
@@ -32,6 +35,7 @@ def push_telemetry(data: TelemetryData):
     # Save only the most recent entry
     latest_telemetry = data
     return {"status": "success"}
+
 
 @app.get("/telemetry")
 def get_telemetry():
@@ -47,19 +51,66 @@ current_config = {
     "poll_interval_ms": 5000
 }
 
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+        # Send current config on connect
+        await websocket.send_json(current_config)
+
+    def disconnect(self, websocket: WebSocket):
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+
+    async def broadcast_config(self):
+        for connection in self.active_connections:
+            try:
+                await connection.send_json(current_config)
+            except Exception:
+                pass
+
+
+manager = ConnectionManager()
+
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    global latest_telemetry
+    await manager.connect(websocket)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            try:
+                telemetry = json.loads(data)
+                if "temperature" in telemetry:
+                    print(f"==== Received WS Telemetry ====\n{telemetry}\n")
+                    latest_telemetry = telemetry
+            except Exception:
+                pass
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+
+
 @app.get("/config")
 def pull_config():
     print(f"==== Sent Config ====\n{current_config}\n")
     return current_config
 
+
 @app.post("/config")
-def push_config(data: ConfigData):
+async def push_config(data: ConfigData):
     """
     Use this endpoint to update the configuration that the ESP32 node pulls.
     """
     global current_config
     current_config = data.dict()
     print(f"==== Updated Config ====\n{current_config}\n")
+    # Broadcast to all connected WebSockets immediately
+    await manager.broadcast_config()
     return {"status": "success", "new_config": current_config}
 
 
