@@ -1,2 +1,4 @@
 dependencies:
   espressif/mdns: "*"
+  espressif/cjson: "*"
+  espressif/esp_websocket_client: "*"
