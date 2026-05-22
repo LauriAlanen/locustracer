@@ -151,11 +151,16 @@ async def push_config(data: ConfigData):
     global current_configs
     node_id = data.node_id
     config_dict = data.dict(exclude={"node_id"})
-    current_configs[node_id] = config_dict
+    
+    # Store config but DO NOT persist 'buzzer_pitch' as True for future reconnects.
+    stored_config = dict(config_dict)
+    stored_config["buzzer_pitch"] = False
+    current_configs[node_id] = stored_config
+    
     print(f"==== Updated Config for {node_id} ====\n{config_dict}\n")
-    # Send to the specific connected WebSocket immediately
+    # Send the original requested config (which may contain buzzer_pitch: True) to the specific connected WebSocket immediately
     await manager.send_config_to_node(node_id, config_dict)
-    return {"status": "success", "node_id": node_id, "new_config": config_dict}
+    return {"status": "success", "node_id": node_id, "new_config": stored_config}
 
 
 if __name__ == "__main__":

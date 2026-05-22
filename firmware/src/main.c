@@ -82,7 +82,7 @@ void app_main(void)
     // Initialize buzzer and play a startup sound only on master
     if (is_master) {
         buzzer_init();
-        buzzer_play_pitch_effect();
+        buzzer_play_chirp_effect();
     }
 
     gpio_reset_pin(BLINK_GPIO);

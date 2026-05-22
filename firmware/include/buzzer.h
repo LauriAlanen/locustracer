@@ -40,6 +40,12 @@ void buzzer_set_volume(uint8_t volume_percent);
  */
 void buzzer_play_pitch_effect(void);
 
+/**
+ * @brief Play a short chirp effect.
+ * Blocks the current task while playing.
+ */
+void buzzer_play_chirp_effect(void);
+
 #ifdef __cplusplus
 }
 #endif
