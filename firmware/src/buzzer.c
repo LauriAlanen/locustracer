@@ -92,3 +92,20 @@ void buzzer_play_pitch_effect(void)
     
     buzzer_set_state(false);
 }
+
+void buzzer_play_chirp_effect(void)
+{
+    ESP_LOGI(TAG, "Playing chirp effect (beep beep beep)");
+    
+    buzzer_set_frequency(4000);
+    
+    // Play 3 fast beeps
+    for (int i = 0; i < 3; i++) {
+        buzzer_set_state(true);
+        vTaskDelay(pdMS_TO_TICKS(50));
+        buzzer_set_state(false);
+        if (i < 2) {
+            vTaskDelay(pdMS_TO_TICKS(50));
+        }
+    }
+}

@@ -71,16 +71,19 @@ void app_main(void)
     // Initialize microphone reader
     // mic_reader_init();
 
-    // Initialize API client and start task
+    // Initialize SHTC3 sensor first to detect node type (master vs listener)
+    bool is_master = shtc3_init();
+
+    // Initialize API client, pass the detected node type, and start task
+    api_client_set_node_type(is_master);
     api_client_init();
     xTaskCreate(api_client_task, "api_client_task", 8192, NULL, 5, NULL);
 
-    // Initialize buzzer and play a startup sound
-    buzzer_init();
-    buzzer_play_pitch_effect();
-    
-    // Initialize SHTC3 sensor
-    shtc3_init();
+    // Initialize buzzer and play a startup sound only on master
+    if (is_master) {
+        buzzer_init();
+        buzzer_play_chirp_effect();
+    }
 
     gpio_reset_pin(BLINK_GPIO);
     gpio_set_direction(BLINK_GPIO, GPIO_MODE_OUTPUT);
