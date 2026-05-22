@@ -13,6 +13,7 @@
 #include "mdns.h"
 #include "esp_mac.h"
 #include "api_client.h"
+#include "buzzer.h"
 
 #define BLINK_GPIO 21
 
@@ -72,6 +73,10 @@ void app_main(void)
     // Initialize API client and start task
     api_client_init();
     xTaskCreate(api_client_task, "api_client_task", 8192, NULL, 5, NULL);
+
+    // Initialize buzzer and play a startup sound
+    buzzer_init();
+    buzzer_play_pitch_effect();
 
     gpio_reset_pin(BLINK_GPIO);
     gpio_set_direction(BLINK_GPIO, GPIO_MODE_OUTPUT);

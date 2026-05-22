@@ -40,11 +40,6 @@ float get_sensor_humidity(void);
  */
 float get_cpu_temp(void);
 
-/**
- * @brief Trigger the buzzer
- */
-void trigger_buzzer(void);
-
 #ifdef __cplusplus
 }
 #endif
