@@ -2,15 +2,17 @@
 #define SHTC3_H
 
 #include "esp_err.h"
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /**
- * @brief Initialize the SHTC3 sensor (configures I2C peripheral).
+ * @brief Initialize the SHTC3 sensor.
+ * @return true if sensor is detected successfully, false otherwise.
  */
-void shtc3_init(void);
+bool shtc3_init(void);
 
 /**
  * @brief Read temperature and humidity from the SHTC3 sensor.

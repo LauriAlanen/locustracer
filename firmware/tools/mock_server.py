@@ -1,6 +1,6 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 import uvicorn
 import json
 
@@ -13,42 +13,57 @@ app = FastAPI(
 
 
 class TelemetryData(BaseModel):
-    temperature: float
-    humidity: float
-    cpu_temp: float
+    node_id: str = "unknown"
+    node_type: str = "unknown"
+    temperature: Optional[float] = None
+    humidity: Optional[float] = None
+    cpu_temp: Optional[float] = None
 
 
 class ConfigData(BaseModel):
+    node_id: str
     buzzer_state: bool = False
     buzzer_pitch: bool = False
     buzzer_volume: int = 1
     poll_interval_ms: int = 5000
 
 
-# Store the latest telemetry
-latest_telemetry = None
+# Store the latest telemetry categorized by node type
+latest_telemetry: dict = {
+    "master": {},
+    "listener": {},
+    "unknown": {}
+}
 
 
 @app.post("/telemetry")
 def push_telemetry(data: TelemetryData):
     global latest_telemetry
+    node_id = data.node_id
+    node_type = data.node_type
+    
+    # Ensure category exists
+    if node_type not in latest_telemetry:
+        latest_telemetry[node_type] = {}
+        
     print(
-        f"==== Received Telemetry ====\nTemp: {data.temperature}\nHum:  {data.humidity}\nCPU:  {data.cpu_temp}\n")
-    # Save only the most recent entry
-    latest_telemetry = data
+        f"==== Received {node_type} Telemetry from {node_id} ====\nTemp: {data.temperature}\nHum:  {data.humidity}\nCPU:  {data.cpu_temp}\n")
+    # Save only the most recent entry per node
+    latest_telemetry[node_type][node_id] = data
     return {"status": "success"}
 
 
 @app.get("/telemetry")
 def get_telemetry():
     """
-    Use this endpoint to see the most recent values pushed by the ESP32 node.
+    Use this endpoint to see the most recent values pushed by the ESP32 nodes.
     """
-    return latest_telemetry or {}
+    return latest_telemetry
 
 
-# Store the current config
-current_config = {
+# Store the current config per node
+current_configs: dict = {}
+default_config = {
     "buzzer_state": False,
     "buzzer_pitch": False,
     "buzzer_volume": 1,
@@ -58,22 +73,30 @@ current_config = {
 
 class ConnectionManager:
     def __init__(self):
-        self.active_connections: List[WebSocket] = []
+        self.active_connections: dict[str, WebSocket] = {}
 
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
-        self.active_connections.append(websocket)
-        # Send current config on connect
-        await websocket.send_json(current_config)
+
+    async def register_node(self, websocket: WebSocket, node_id: str):
+        # Register the websocket under the specific node_id
+        self.active_connections[node_id] = websocket
+        # Send current config on registration
+        config = current_configs.get(node_id, default_config)
+        try:
+            await websocket.send_json(config)
+        except Exception:
+            pass
 
     def disconnect(self, websocket: WebSocket):
-        if websocket in self.active_connections:
-            self.active_connections.remove(websocket)
+        for node_id, conn in list(self.active_connections.items()):
+            if conn == websocket:
+                del self.active_connections[node_id]
 
-    async def broadcast_config(self):
-        for connection in self.active_connections:
+    async def send_config_to_node(self, node_id: str, config: dict):
+        if node_id in self.active_connections:
             try:
-                await connection.send_json(current_config)
+                await self.active_connections[node_id].send_json(config)
             except Exception:
                 pass
 
@@ -85,14 +108,25 @@ manager = ConnectionManager()
 async def websocket_endpoint(websocket: WebSocket):
     global latest_telemetry
     await manager.connect(websocket)
+    registered = False
     try:
         while True:
             data = await websocket.receive_text()
             try:
                 telemetry = json.loads(data)
-                if "temperature" in telemetry:
-                    print(f"==== Received WS Telemetry ====\n{telemetry}\n")
-                    latest_telemetry = telemetry
+                node_id = telemetry.get("node_id", "unknown")
+                node_type = telemetry.get("node_type", "unknown")
+                
+                if not registered:
+                    await manager.register_node(websocket, node_id)
+                    registered = True
+                
+                if node_type not in latest_telemetry:
+                    latest_telemetry[node_type] = {}
+                    
+                if "temperature" in telemetry or "cpu_temp" in telemetry:
+                    print(f"==== Received WS {node_type} Telemetry from {node_id} ====\n{telemetry}\n")
+                    latest_telemetry[node_type][node_id] = telemetry
             except Exception:
                 pass
     except WebSocketDisconnect:
@@ -100,9 +134,13 @@ async def websocket_endpoint(websocket: WebSocket):
 
 
 @app.get("/config")
-def pull_config():
-    print(f"==== Sent Config ====\n{current_config}\n")
-    return current_config
+def pull_config(node_id: Optional[str] = None):
+    if node_id:
+        config = current_configs.get(node_id, default_config)
+        print(f"==== Sent Config for {node_id} ====\n{config}\n")
+        return config
+    print(f"==== Sent All Configs ====\n{current_configs}\n")
+    return current_configs
 
 
 @app.post("/config")
@@ -110,12 +148,14 @@ async def push_config(data: ConfigData):
     """
     Use this endpoint to update the configuration that the ESP32 node pulls.
     """
-    global current_config
-    current_config = data.dict()
-    print(f"==== Updated Config ====\n{current_config}\n")
-    # Broadcast to all connected WebSockets immediately
-    await manager.broadcast_config()
-    return {"status": "success", "new_config": current_config}
+    global current_configs
+    node_id = data.node_id
+    config_dict = data.dict(exclude={"node_id"})
+    current_configs[node_id] = config_dict
+    print(f"==== Updated Config for {node_id} ====\n{config_dict}\n")
+    # Send to the specific connected WebSocket immediately
+    await manager.send_config_to_node(node_id, config_dict)
+    return {"status": "success", "node_id": node_id, "new_config": config_dict}
 
 
 if __name__ == "__main__":

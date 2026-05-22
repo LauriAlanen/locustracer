@@ -8,8 +8,15 @@
 #include "cJSON.h"
 #include "buzzer.h"
 #include "shtc3.h"
+#include "esp_mac.h"
 
 static const char *TAG = "API_CLIENT";
+
+static bool g_is_master_node = false;
+
+void api_client_set_node_type(bool is_master) {
+    g_is_master_node = is_master;
+}
 
 
 #define WEBSOCKET_URL "ws://192.168.3.65:8009/ws"
@@ -62,6 +69,8 @@ static const api_command_t api_commands[] = {
 typedef void (*telemetry_provider_fn)(cJSON *root);
 
 static void provide_shtc3_telemetry(cJSON *root) {
+    if (!g_is_master_node) return;
+
     float temperature = 0.0f;
     float humidity = 0.0f;
     
@@ -77,10 +86,24 @@ static void provide_cpu_telemetry(cJSON *root) {
     cJSON_AddNumberToObject(root, "cpu_temp", get_cpu_temp());
 }
 
+static void provide_node_id_telemetry(cJSON *root) {
+    uint8_t mac[6];
+    esp_read_mac(mac, ESP_MAC_WIFI_STA);
+    char mac_str[18];
+    snprintf(mac_str, sizeof(mac_str), "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    cJSON_AddStringToObject(root, "node_id", mac_str);
+}
+
+static void provide_node_type_telemetry(cJSON *root) {
+    cJSON_AddStringToObject(root, "node_type", g_is_master_node ? "master" : "listener");
+}
+
 // Add new telemetry providers here to scale the API outgoing metrics
 static const telemetry_provider_fn telemetry_providers[] = {
     provide_shtc3_telemetry,
     provide_cpu_telemetry,
+    provide_node_id_telemetry,
+    provide_node_type_telemetry,
 };
 #define NUM_TELEMETRY_PROVIDERS (sizeof(telemetry_providers) / sizeof(telemetry_providers[0]))
 
@@ -111,11 +134,13 @@ static void websocket_event_handler(void *handler_args, esp_event_base_t base, i
                 // Parse the JSON payload
                 cJSON *root = cJSON_Parse(json_str);
                 if (root != NULL) {
-                    // Iterate through known commands and call their handler if present in payload
-                    for (int i = 0; i < NUM_API_COMMANDS; i++) {
-                        cJSON *cmd_val = cJSON_GetObjectItemCaseSensitive(root, api_commands[i].key);
-                        if (cmd_val != NULL) {
-                            api_commands[i].handler(cmd_val);
+                    if (g_is_master_node) {
+                        // Iterate through known commands and call their handler if present in payload
+                        for (int i = 0; i < NUM_API_COMMANDS; i++) {
+                            cJSON *cmd_val = cJSON_GetObjectItemCaseSensitive(root, api_commands[i].key);
+                            if (cmd_val != NULL) {
+                                api_commands[i].handler(cmd_val);
+                            }
                         }
                     }
                     cJSON_Delete(root);

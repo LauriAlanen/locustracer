@@ -25,7 +25,7 @@ static esp_err_t shtc3_send_cmd(uint16_t cmd) {
     return i2c_master_transmit(shtc3_handle, data, 2, I2C_MASTER_TIMEOUT_MS);
 }
 
-void shtc3_init(void) {
+bool shtc3_init(void) {
     ESP_LOGI(TAG, "Initializing I2C Master for SHTC3 on SDA=%d SCL=%d", I2C_MASTER_SDA_PIN, I2C_MASTER_SCL_PIN);
 
     i2c_master_bus_config_t i2c_mst_config = {
@@ -51,8 +51,10 @@ void shtc3_init(void) {
         ESP_LOGI(TAG, "SHTC3 Sensor detected successfully!");
         vTaskDelay(pdMS_TO_TICKS(20)); // Wait for wakeup
         shtc3_send_cmd(SHTC3_CMD_SLEEP);
+        return true;
     } else {
         ESP_LOGE(TAG, "Failed to detect SHTC3 Sensor!");
+        return false;
     }
 }
 
