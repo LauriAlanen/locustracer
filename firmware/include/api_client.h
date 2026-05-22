@@ -23,18 +23,6 @@ void api_client_task(void *pvParameters);
 // --- Dummy Hardware Callbacks ---
 
 /**
- * @brief Get dummy temperature from sensor
- * @return float Temperature value
- */
-float get_sensor_temp(void);
-
-/**
- * @brief Get dummy humidity from sensor
- * @return float Humidity value
- */
-float get_sensor_humidity(void);
-
-/**
  * @brief Get dummy CPU temperature
  * @return float CPU temperature value
  */

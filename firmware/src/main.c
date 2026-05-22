@@ -14,6 +14,7 @@
 #include "esp_mac.h"
 #include "api_client.h"
 #include "buzzer.h"
+#include "shtc3.h"
 
 #define BLINK_GPIO 21
 
@@ -77,6 +78,9 @@ void app_main(void)
     // Initialize buzzer and play a startup sound
     buzzer_init();
     buzzer_play_pitch_effect();
+    
+    // Initialize SHTC3 sensor
+    shtc3_init();
 
     gpio_reset_pin(BLINK_GPIO);
     gpio_set_direction(BLINK_GPIO, GPIO_MODE_OUTPUT);

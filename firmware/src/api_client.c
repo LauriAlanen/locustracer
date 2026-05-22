@@ -7,6 +7,7 @@
 #include "esp_websocket_client.h"
 #include "cJSON.h"
 #include "buzzer.h"
+#include "shtc3.h"
 
 static const char *TAG = "API_CLIENT";
 
@@ -14,9 +15,6 @@ static const char *TAG = "API_CLIENT";
 #define WEBSOCKET_URL "ws://192.168.3.65:8009/ws"
 #define API_TASK_DELAY_MS 5000 // 5 seconds for telemetry
 
-// Dummy hardware callbacks implementation
-float get_sensor_temp(void) { return 24.5f; }
-float get_sensor_humidity(void) { return 55.0f; }
 float get_cpu_temp(void) { return 42.0f; }
 
 // --- Command Dispatcher Architecture ---
@@ -59,6 +57,32 @@ static const api_command_t api_commands[] = {
     {"buzzer_pitch", handle_buzzer_pitch},
 };
 #define NUM_API_COMMANDS (sizeof(api_commands) / sizeof(api_commands[0]))
+
+// --- Telemetry Provider Architecture ---
+typedef void (*telemetry_provider_fn)(cJSON *root);
+
+static void provide_shtc3_telemetry(cJSON *root) {
+    float temperature = 0.0f;
+    float humidity = 0.0f;
+    
+    if (shtc3_read(&temperature, &humidity) == ESP_OK) {
+        cJSON_AddNumberToObject(root, "temperature", temperature);
+        cJSON_AddNumberToObject(root, "humidity", humidity);
+    } else {
+        ESP_LOGE(TAG, "Failed to read SHTC3 sensor");
+    }
+}
+
+static void provide_cpu_telemetry(cJSON *root) {
+    cJSON_AddNumberToObject(root, "cpu_temp", get_cpu_temp());
+}
+
+// Add new telemetry providers here to scale the API outgoing metrics
+static const telemetry_provider_fn telemetry_providers[] = {
+    provide_shtc3_telemetry,
+    provide_cpu_telemetry,
+};
+#define NUM_TELEMETRY_PROVIDERS (sizeof(telemetry_providers) / sizeof(telemetry_providers[0]))
 
 static esp_websocket_client_handle_t ws_client;
 
@@ -124,9 +148,10 @@ void api_client_task(void *pvParameters) {
             // Create JSON object for telemetry
             cJSON *root = cJSON_CreateObject();
             if (root) {
-                cJSON_AddNumberToObject(root, "temperature", get_sensor_temp());
-                cJSON_AddNumberToObject(root, "humidity", get_sensor_humidity());
-                cJSON_AddNumberToObject(root, "cpu_temp", get_cpu_temp());
+                // Gather telemetry from all registered providers
+                for (int i = 0; i < NUM_TELEMETRY_PROVIDERS; i++) {
+                    telemetry_providers[i](root);
+                }
                 
                 char *json_string = cJSON_PrintUnformatted(root);
                 if (json_string) {
