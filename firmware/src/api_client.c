@@ -6,8 +6,10 @@
 #include "esp_log.h"
 #include "esp_websocket_client.h"
 #include "cJSON.h"
+#include "buzzer.h"
 
 static const char *TAG = "API_CLIENT";
+
 
 #define WEBSOCKET_URL "ws://192.168.3.65:8009/ws"
 #define API_TASK_DELAY_MS 5000 // 5 seconds for telemetry
@@ -16,9 +18,50 @@ static const char *TAG = "API_CLIENT";
 float get_sensor_temp(void) { return 24.5f; }
 float get_sensor_humidity(void) { return 55.0f; }
 float get_cpu_temp(void) { return 42.0f; }
-void trigger_buzzer(void) { ESP_LOGI(TAG, "Buzzer triggered in REAL TIME!"); }
+
+// --- Command Dispatcher Architecture ---
+typedef void (*api_command_handler_t)(cJSON *value);
+
+typedef struct {
+    const char *key;
+    api_command_handler_t handler;
+} api_command_t;
+
+static void handle_buzzer_state(cJSON *value) {
+    if (cJSON_IsBool(value)) {
+        buzzer_set_state(cJSON_IsTrue(value));
+        ESP_LOGI(TAG, "Buzzer state set to %d via API", cJSON_IsTrue(value));
+    }
+}
+
+static void handle_buzzer_pitch(cJSON *value) {
+    if (cJSON_IsTrue(value)) {
+        ESP_LOGI(TAG, "Triggering buzzer pitch effect via API");
+        buzzer_play_pitch_effect();
+    }
+}
+
+static void handle_buzzer_volume(cJSON *value) {
+    if (cJSON_IsNumber(value)) {
+        int volume = value->valueint;
+        if (volume >= 0 && volume <= 100) {
+            buzzer_set_volume((uint8_t)volume);
+            ESP_LOGI(TAG, "Buzzer volume set to %d via API", volume);
+        }
+    }
+}
+
+// Add new command handlers here to scale the API
+// Note: Order matters! Process configurations (like volume) before triggers (like pitch or state).
+static const api_command_t api_commands[] = {
+    {"buzzer_volume", handle_buzzer_volume},
+    {"buzzer_state", handle_buzzer_state},
+    {"buzzer_pitch", handle_buzzer_pitch},
+};
+#define NUM_API_COMMANDS (sizeof(api_commands) / sizeof(api_commands[0]))
 
 static esp_websocket_client_handle_t ws_client;
+
 
 static void websocket_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data)
 {
@@ -44,9 +87,12 @@ static void websocket_event_handler(void *handler_args, esp_event_base_t base, i
                 // Parse the JSON payload
                 cJSON *root = cJSON_Parse(json_str);
                 if (root != NULL) {
-                    cJSON *buzzer_cmd = cJSON_GetObjectItemCaseSensitive(root, "trigger_buzzer");
-                    if (cJSON_IsTrue(buzzer_cmd)) {
-                        trigger_buzzer();
+                    // Iterate through known commands and call their handler if present in payload
+                    for (int i = 0; i < NUM_API_COMMANDS; i++) {
+                        cJSON *cmd_val = cJSON_GetObjectItemCaseSensitive(root, api_commands[i].key);
+                        if (cmd_val != NULL) {
+                            api_commands[i].handler(cmd_val);
+                        }
                     }
                     cJSON_Delete(root);
                 }

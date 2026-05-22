@@ -19,8 +19,10 @@ class TelemetryData(BaseModel):
 
 
 class ConfigData(BaseModel):
-    trigger_buzzer: bool
-    poll_interval_ms: int
+    buzzer_state: bool = False
+    buzzer_pitch: bool = False
+    buzzer_volume: int = 1
+    poll_interval_ms: int = 5000
 
 
 # Store the latest telemetry
@@ -47,7 +49,9 @@ def get_telemetry():
 
 # Store the current config
 current_config = {
-    "trigger_buzzer": False,
+    "buzzer_state": False,
+    "buzzer_pitch": False,
+    "buzzer_volume": 1,
     "poll_interval_ms": 5000
 }
 
