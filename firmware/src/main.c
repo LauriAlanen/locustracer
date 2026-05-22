@@ -12,6 +12,7 @@
 #include "ota_manager.h"
 #include "mdns.h"
 #include "esp_mac.h"
+#include "api_client.h"
 
 #define BLINK_GPIO 21
 
@@ -63,10 +64,14 @@ void app_main(void)
     //tsf_sender_init();
 
     // Initialize audio payload transmitter
-    audio_transmitter_init();
+    //audio_transmitter_init();
 
     // Initialize microphone reader
-    mic_reader_init();
+    // mic_reader_init();
+
+    // Initialize API client and start task
+    api_client_init();
+    xTaskCreate(api_client_task, "api_client_task", 8192, NULL, 5, NULL);
 
     gpio_reset_pin(BLINK_GPIO);
     gpio_set_direction(BLINK_GPIO, GPIO_MODE_OUTPUT);
