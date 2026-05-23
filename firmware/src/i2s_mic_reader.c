@@ -1,5 +1,4 @@
-#include "mic_reader.h"
-#include "pin_config.h"
+#include "i2s_mic_reader.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/i2s_std.h"
@@ -8,12 +7,11 @@
 #include <stdlib.h>
 #include "audio_transmitter.h"
 
-static const char *TAG = "MicReader";
-
+static const char *TAG = "I2SMicReader";
 static i2s_chan_handle_t rx_chan;
 
-static void mic_reader_task(void *pvParameters) {
-    ESP_LOGI(TAG, "Microphone reader task started");
+static void i2s_mic_reader_task(void *pvParameters) {
+    ESP_LOGI(TAG, "I2S Microphone reader task started");
 
     // We want our chunks to match the maximum packet size (256 frames = 1024 bytes)
     const size_t read_frames = 256;
@@ -33,7 +31,6 @@ static void mic_reader_task(void *pvParameters) {
         esp_err_t res = i2s_channel_read(rx_chan, raw_samples, alloc_bytes, &bytes_read, portMAX_DELAY);
         if (res == ESP_OK) {
             // Get the TSF time immediately after the blocking read completes.
-            // This timestamp roughly corresponds to the end of the acquired buffer.
             uint64_t current_tsf = esp_wifi_get_tsf_time(WIFI_IF_STA);
             
             int samples_read = bytes_read / sizeof(int32_t);
@@ -45,12 +42,9 @@ static void mic_reader_task(void *pvParameters) {
             int32_t peak = 0;
             
             for (int i = 0; i < samples_read; i++) {
-                // The INMP441 provides 24-bit data.
-                // It is shifted to the MSB of the 32-bit slot, meaning the bottom 8 bits are 0.
-                // We shift down by 8 to get a true 24-bit signed integer value.
+                // Shift down 8 to get a true 24-bit signed integer value
                 int32_t sample = raw_samples[i] >> 8;
                 
-                // Get absolute value
                 if (sample < 0) {
                     sample = -sample;
                 }
@@ -60,8 +54,7 @@ static void mic_reader_task(void *pvParameters) {
                 }
             }
 
-            // Print the peak volume every ~1000ms (assuming 48kHz and 256 frames per chunk)
-            // 48000 / 256 = 187.5 chunks per second
+            // Print the peak volume every ~1000ms
             if (++loop_counter >= 187) {
                 ESP_LOGI(TAG, "Audio Peak Vol: %ld | TSF: %llu", (long)peak, current_tsf);
                 loop_counter = 0;
@@ -73,11 +66,11 @@ static void mic_reader_task(void *pvParameters) {
     }
 }
 
-void mic_reader_init(void) {
-    ESP_LOGI(TAG, "Initializing I2S Standard for INMP441...");
+void i2s_mic_reader_init(const i2s_mic_config_t *config) {
+    ESP_LOGI(TAG, "Initializing I2S Standard for Microphone...");
 
     i2s_chan_config_t rx_chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_AUTO, I2S_ROLE_MASTER);
-    rx_chan_cfg.dma_desc_num = 12; // Increase DMA descriptors because chunks are smaller (256 frames)
+    rx_chan_cfg.dma_desc_num = 12;
     rx_chan_cfg.dma_frame_num = 256;
     ESP_ERROR_CHECK(i2s_new_channel(&rx_chan_cfg, NULL, &rx_chan));
 
@@ -86,10 +79,10 @@ void mic_reader_init(void) {
         .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_32BIT, I2S_SLOT_MODE_MONO),
         .gpio_cfg = {
             .mclk = I2S_GPIO_UNUSED,
-            .bclk = INMP441_SCK_PIN,
-            .ws   = INMP441_WS_PIN,
+            .bclk = config->bclk_pin,
+            .ws   = config->ws_pin,
             .dout = I2S_GPIO_UNUSED,
-            .din  = INMP441_SD_PIN,
+            .din  = config->data_in_pin,
             .invert_flags = {
                 .mclk_inv = false,
                 .bclk_inv = false,
@@ -98,14 +91,13 @@ void mic_reader_init(void) {
         },
     };
 
-    // By default, INMP441 configured for Mono (L/R grounded) outputs on the left channel
     rx_std_cfg.slot_cfg.slot_mask = I2S_STD_SLOT_LEFT;
 
     ESP_ERROR_CHECK(i2s_channel_init_std_mode(rx_chan, &rx_std_cfg));
     ESP_ERROR_CHECK(i2s_channel_enable(rx_chan));
     
-    BaseType_t ret = xTaskCreatePinnedToCore(mic_reader_task, 
-                                             "mic_reader_task", 
+    BaseType_t ret = xTaskCreatePinnedToCore(i2s_mic_reader_task, 
+                                             "i2s_mic_task", 
                                              4096, 
                                              NULL, 
                                              10,
