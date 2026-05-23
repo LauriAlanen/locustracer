@@ -7,7 +7,7 @@
 #include "esp_ota_ops.h"
 #include "wifi_manager.h"
 #include "tsf_sender.h"
-#include "mic_reader.h"
+#include "ics43434.h"
 #include "audio_transmitter.h"
 #include "ota_manager.h"
 #include "mdns.h"
@@ -69,7 +69,7 @@ void app_main(void)
     //audio_transmitter_init();
 
     // Initialize microphone reader
-    // mic_reader_init();
+    ics43434_init();
 
     // Initialize SHTC3 sensor first to detect node type (master vs listener)
     bool is_master = shtc3_init();
