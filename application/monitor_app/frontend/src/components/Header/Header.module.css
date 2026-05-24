@@ -72,6 +72,29 @@
     cursor: pointer;
 }
 
+.modeSelect {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.modeSelect:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+}
+
+.modeSelect option {
+    background: #12182b;
+    color: var(--text-primary);
+}
+
 .actionBtn {
     background: rgba(255, 42, 95, 0.1);
     color: var(--danger);

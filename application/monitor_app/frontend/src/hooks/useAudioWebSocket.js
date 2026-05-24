@@ -45,11 +45,12 @@ export function useAudioWebSocket(url = 'ws://127.0.0.1:8009/ui-ws') {
         };
     }, [connect]);
 
-    const sendBeep = useCallback((nodeId) => {
+    const sendBeep = useCallback((nodeId, mode = 'pitch') => {
         if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
             wsRef.current.send(JSON.stringify({
                 action: 'beep',
-                node_id: nodeId
+                node_id: nodeId,
+                mode: mode
             }));
             return true;
         }

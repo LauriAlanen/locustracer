@@ -39,10 +39,24 @@ static void handle_buzzer_state(cJSON *value) {
     }
 }
 
-static void handle_buzzer_pitch(cJSON *value) {
-    if (cJSON_IsTrue(value)) {
-        ESP_LOGI(TAG, "Triggering buzzer pitch effect via API");
-        buzzer_play_pitch_effect();
+static void handle_buzzer_mode(cJSON *value) {
+    if (cJSON_IsString(value)) {
+        const char *mode = value->valuestring;
+        ESP_LOGI(TAG, "Triggering buzzer mode: %s", mode);
+        
+        if (strcmp(mode, "pitch") == 0) {
+            buzzer_play_pitch_effect();
+        } else if (strcmp(mode, "chirp") == 0) {
+            buzzer_play_chirp_effect();
+        } else if (strcmp(mode, "fast_beeps") == 0) {
+            buzzer_play_fast_beeps();
+        } else if (strcmp(mode, "siren") == 0) {
+            buzzer_play_siren();
+        } else if (strcmp(mode, "rumble") == 0) {
+            buzzer_play_rumble();
+        } else {
+            ESP_LOGW(TAG, "Unknown buzzer mode: %s", mode);
+        }
     }
 }
 
@@ -61,7 +75,7 @@ static void handle_buzzer_volume(cJSON *value) {
 static const api_command_t api_commands[] = {
     {"buzzer_volume", handle_buzzer_volume},
     {"buzzer_state", handle_buzzer_state},
-    {"buzzer_pitch", handle_buzzer_pitch},
+    {"buzzer_mode", handle_buzzer_mode},
 };
 #define NUM_API_COMMANDS (sizeof(api_commands) / sizeof(api_commands[0]))
 

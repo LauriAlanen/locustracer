@@ -115,3 +115,61 @@ void buzzer_play_chirp_effect(void)
         }
     }
 }
+
+static void buzzer_fast_beeps_task(void *pvParameters)
+{
+    ESP_LOGI(TAG, "Playing fast beeps task");
+    buzzer_set_frequency(5000); // High pitch
+    for (int i = 0; i < 10; i++) {
+        buzzer_set_state(true);
+        vTaskDelay(pdMS_TO_TICKS(30));
+        buzzer_set_state(false);
+        vTaskDelay(pdMS_TO_TICKS(30));
+    }
+    vTaskDelete(NULL);
+}
+
+void buzzer_play_fast_beeps(void)
+{
+    xTaskCreate(buzzer_fast_beeps_task, "buzzer_fast_beeps_task", 2048, NULL, 5, NULL);
+}
+
+static void buzzer_siren_task(void *pvParameters)
+{
+    ESP_LOGI(TAG, "Playing siren task");
+    buzzer_set_state(true);
+    // Alternate 800Hz and 1200Hz
+    for (int i = 0; i < 4; i++) {
+        buzzer_set_frequency(800);
+        vTaskDelay(pdMS_TO_TICKS(400));
+        buzzer_set_frequency(1200);
+        vTaskDelay(pdMS_TO_TICKS(400));
+    }
+    buzzer_set_state(false);
+    vTaskDelete(NULL);
+}
+
+void buzzer_play_siren(void)
+{
+    xTaskCreate(buzzer_siren_task, "buzzer_siren_task", 2048, NULL, 5, NULL);
+}
+
+static void buzzer_rumble_task(void *pvParameters)
+{
+    ESP_LOGI(TAG, "Playing rumble task");
+    buzzer_set_state(true);
+    // Rapidly alternate low frequencies
+    for (int i = 0; i < 20; i++) {
+        buzzer_set_frequency(50);
+        vTaskDelay(pdMS_TO_TICKS(40));
+        buzzer_set_frequency(100);
+        vTaskDelay(pdMS_TO_TICKS(40));
+    }
+    buzzer_set_state(false);
+    vTaskDelete(NULL);
+}
+
+void buzzer_play_rumble(void)
+{
+    xTaskCreate(buzzer_rumble_task, "buzzer_rumble_task", 2048, NULL, 5, NULL);
+}
