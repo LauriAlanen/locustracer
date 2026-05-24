@@ -102,7 +102,7 @@ void i2s_mic_reader_init(const i2s_mic_config_t *config) {
                                              NULL, 
                                              10,
                                              NULL, 
-                                             1);
+                                             tskNO_AFFINITY);
 
     if (ret != pdPASS) {
         ESP_LOGE(TAG, "Failed to create microphone reader task");

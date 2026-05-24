@@ -79,6 +79,6 @@ void tsf_sender_init(void)
         NULL,
         configMAX_PRIORITIES - 1, // High priority
         NULL,
-        1 // Pinned to Core 1
+        tskNO_AFFINITY // Let FreeRTOS decide
     );
 }
