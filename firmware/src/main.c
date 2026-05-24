@@ -53,8 +53,6 @@ void app_main(void)
     wifi_wait_for_connection();
     printf("Wi-Fi Connected!\n");
 
-    // We successfully booted and connected to Wi-Fi. Mark this firmware as valid so it won't roll back.
-    esp_ota_mark_app_valid_cancel_rollback();
 
     // Initialize mDNS so we can find this node via locustracer-XXXX.local
     init_mdns();
@@ -68,22 +66,22 @@ void app_main(void)
     // Initialize audio payload transmitter
     //audio_transmitter_init();
 
-    // Initialize microphone reader
+#if NODE_IS_MASTER
+    // Master Node (e.g. S2 Mini): Temp/Hum, Buzzer, NO Microphone
+    shtc3_init();
+    api_client_set_node_type(true);
+    
+    buzzer_init();
+    buzzer_play_chirp_effect();
+#else
+    // Listener Node (e.g. XIAO ESP32S3): Microphone, NO Temp/Hum, NO Buzzer
     ics43434_init();
+    api_client_set_node_type(false);
+#endif
 
-    // Initialize SHTC3 sensor first to detect node type (master vs listener)
-    bool is_master = shtc3_init();
-
-    // Initialize API client, pass the detected node type, and start task
-    api_client_set_node_type(is_master);
+    // Initialize API client and start task
     api_client_init();
     xTaskCreate(api_client_task, "api_client_task", 8192, NULL, 5, NULL);
-
-    // Initialize buzzer and play a startup sound only on master
-    if (is_master) {
-        buzzer_init();
-        buzzer_play_chirp_effect();
-    }
 
     gpio_reset_pin(BLINK_GPIO);
     gpio_set_direction(BLINK_GPIO, GPIO_MODE_OUTPUT);
