@@ -128,13 +128,23 @@ function connectAudioWS() {
                 }
                 const nodeInfo = audioNodes.get(ip);
                 nodeInfo.data = samples;
-                requestAnimationFrame(() => drawWaveform(nodeInfo));
             }
         } catch (e) {
             console.error("Failed to parse WS message", e);
         }
     };
 }
+
+// Global render loop to decouple drawing from network events
+function renderLoop() {
+    for (const nodeInfo of audioNodes.values()) {
+        if (nodeInfo.data && nodeInfo.data.length > 0) {
+            drawWaveform(nodeInfo);
+        }
+    }
+    requestAnimationFrame(renderLoop);
+}
+requestAnimationFrame(renderLoop);
 
 // --- TELEMETRY FETCHING ---
 
