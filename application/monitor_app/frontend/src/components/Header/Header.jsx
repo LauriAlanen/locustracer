@@ -1,0 +1,69 @@
+import React, { useState } from 'react';
+import { SatelliteDish, Volume2, Check } from 'lucide-react';
+import styles from './Header.module.css';
+
+export function Header({ wsStatus, masterNodeId, onBeep, onSetVolume }) {
+    const [justBeeped, setJustBeeped] = useState(false);
+    const [volume, setVolume] = useState(10); // default
+
+    const handleBeep = () => {
+        if (!masterNodeId) {
+            alert("Master node not detected yet. Waiting for telemetry...");
+            return;
+        }
+
+        if (wsStatus === 'connected') {
+            const success = onBeep(masterNodeId);
+            if (success) {
+                setJustBeeped(true);
+                setTimeout(() => setJustBeeped(false), 1500);
+            }
+        } else {
+            alert("WebSocket is not connected.");
+        }
+    };
+
+    return (
+        <header className={`glass-panel ${styles.header}`}>
+            <div className={styles.brand}>
+                <div className={styles.logoIcon}>
+                    <SatelliteDish size={32} />
+                </div>
+                <h1>Locustracer <span>Local UI</span></h1>
+            </div>
+
+            <div className={styles.controls}>
+                {masterNodeId ? (
+                    <div className={styles.masterControls}>
+                        <div className={styles.volumeControl}>
+                            <Volume2 size={16} />
+                            <input 
+                                type="range" 
+                                min="0" max="100" 
+                                value={volume} 
+                                onChange={(e) => {
+                                    setVolume(e.target.value);
+                                    if(onSetVolume) onSetVolume(masterNodeId, e.target.value);
+                                }}
+                            />
+                        </div>
+                        <button
+                            onClick={handleBeep}
+                            className={`${styles.actionBtn} ${justBeeped ? styles.btnSuccess : ''}`}
+                        >
+                            {justBeeped ? <Check size={20} /> : <Volume2 size={20} />}
+                            {justBeeped ? 'Command Sent!' : 'Beep Master Node'}
+                        </button>
+                    </div>
+                ) : null}
+
+                <div className={styles.statusIndicators}>
+                    <div className={styles.statusPill}>
+                        <div className={`${styles.dot} ${wsStatus === 'connected' ? styles.pulseGreen : styles.pulseRed}`}></div>
+                        <span>{wsStatus === 'connected' ? 'Stream Connected' : 'Stream Disconnected'}</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+    );
+}

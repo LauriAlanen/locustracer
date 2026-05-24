@@ -12,6 +12,9 @@ RUN rm -f /etc/apt/sources.list.d/yarn.list && \
     udev \
     sudo
 
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs
+
 RUN curl -fsSL https://raw.githubusercontent.com/platformio/platformio-core/develop/platformio/assets/system/99-platformio-udev.rules \
     -o /etc/udev/rules.d/99-platformio-udev.rules
 
