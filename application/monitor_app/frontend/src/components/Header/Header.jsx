@@ -54,6 +54,7 @@ export function Header({ wsStatus, masterNodeId, onBeep, onSetVolume }) {
                             onChange={(e) => setBuzzMode(e.target.value)}
                         >
                             <option value="pitch">Pitch Sweep</option>
+                            <option value="single_beep">Single Beep</option>
                             <option value="chirp">Chirp</option>
                             <option value="fast_beeps">Fast Beeps</option>
                             <option value="siren">Siren</option>

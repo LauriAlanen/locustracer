@@ -134,6 +134,21 @@ void buzzer_play_fast_beeps(void)
     xTaskCreate(buzzer_fast_beeps_task, "buzzer_fast_beeps_task", 2048, NULL, 5, NULL);
 }
 
+static void buzzer_single_beep_task(void *pvParameters)
+{
+    ESP_LOGI(TAG, "Playing single beep task");
+    buzzer_set_frequency(4000); // Standard pitch
+    buzzer_set_state(true);
+    vTaskDelay(pdMS_TO_TICKS(50));
+    buzzer_set_state(false);
+    vTaskDelete(NULL);
+}
+
+void buzzer_play_single_beep(void)
+{
+    xTaskCreate(buzzer_single_beep_task, "buzzer_single_beep_task", 2048, NULL, 5, NULL);
+}
+
 static void buzzer_siren_task(void *pvParameters)
 {
     ESP_LOGI(TAG, "Playing siren task");

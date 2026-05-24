@@ -50,6 +50,8 @@ static void handle_buzzer_mode(cJSON *value) {
             buzzer_play_chirp_effect();
         } else if (strcmp(mode, "fast_beeps") == 0) {
             buzzer_play_fast_beeps();
+        } else if (strcmp(mode, "single_beep") == 0) {
+            buzzer_play_single_beep();
         } else if (strcmp(mode, "siren") == 0) {
             buzzer_play_siren();
         } else if (strcmp(mode, "rumble") == 0) {
