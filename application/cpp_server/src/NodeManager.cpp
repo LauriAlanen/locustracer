@@ -1,6 +1,10 @@
 #include "NodeManager.h"
+#include "AudioSynchronizer.h"
 #include <iostream>
 #include <iomanip>
+
+NodeManager::NodeManager(std::shared_ptr<AudioSynchronizer> synchronizer)
+    : synchronizer_(synchronizer) {}
 
 void NodeManager::processPacket(const std::string& ip_address, const AudioPacket* packet, size_t packet_size) {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -29,6 +33,10 @@ void NodeManager::processPacket(const std::string& ip_address, const AudioPacket
     if (packet_size > header_size) {
         size_t samples_bytes = packet_size - header_size;
         stats.total_samples += (samples_bytes / sizeof(int32_t));
+    }
+
+    if (synchronizer_) {
+        synchronizer_->pushPacket(ip_address, packet, packet_size);
     }
 }
 
