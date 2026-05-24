@@ -15,6 +15,18 @@
 #define I2C_MASTER_SDA_PIN 8
 #define I2C_MASTER_SCL_PIN 9
 
+#elif defined(BOARD_ESP32_S3_DEVKITC_1)
+
+// ESP32-S3 DevKitC-1 pins
+// Using safe pins 4, 5, 6 for I2S
+#define ICS43434_SCK_PIN  4
+#define ICS43434_WS_PIN   5
+#define ICS43434_SD_PIN   6
+
+#define BUZZER_PIN        9
+#define I2C_MASTER_SDA_PIN 1
+#define I2C_MASTER_SCL_PIN 2
+
 #else
 
 // Default (Seeed XIAO ESP32S3) pins
