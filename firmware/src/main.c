@@ -52,18 +52,13 @@ void app_main(void)
     wifi_wait_for_connection();
     printf("Wi-Fi Connected!\n");
 
-
-    // Initialize mDNS so we can find this node via locustracer-XXXX.local
+    // Initialize networking components
     init_mdns();
-
-    // Initialize OTA update server
     ota_manager_init();
-
-    // Initialize TSF UDP Broadcaster Task
-    //tsf_sender_init();
-
-    // Initialize audio payload transmitter
-    //audio_transmitter_init();
+    
+    // This is why no data was sending to the C++ Server!
+    tsf_sender_init();
+    audio_transmitter_init();
 
 #if NODE_IS_MASTER
     // Master Node (e.g. S2 Mini): Temp/Hum, Buzzer, NO Microphone
@@ -73,7 +68,7 @@ void app_main(void)
     buzzer_init();
     buzzer_play_chirp_effect();
 #else
-    // Listener Node (e.g. XIAO ESP32S3): Microphone, NO Temp/Hum, NO Buzzer
+    // Listener Node (e.g. XIAO ESP32S3 or DevKitC): Microphone, NO Temp/Hum, NO Buzzer
     ics43434_init();
     api_client_set_node_type(false);
 #endif
@@ -84,5 +79,4 @@ void app_main(void)
 
     // Start the heartbeat LED
     led_indicator_start();
-
 }
