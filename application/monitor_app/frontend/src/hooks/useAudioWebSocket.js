@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-export function useAudioWebSocket(url = 'ws://127.0.0.1:8010') {
+export function useAudioWebSocket(url = 'ws://127.0.0.1:8009/ui-ws') {
     const [status, setStatus] = useState('disconnected');
     const wsRef = useRef(null);
     
