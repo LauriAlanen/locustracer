@@ -5,6 +5,7 @@
 #include <thread>
 #include <atomic>
 #include <string>
+#include <netinet/in.h>
 
 class UDPServer {
 public:
@@ -22,6 +23,8 @@ private:
 
     uint16_t port_;
     int socket_fd_;
+    int forward_socket_fd_;
+    struct sockaddr_in forward_addr_;
     NodeManager& node_manager_;
 
     std::atomic<bool> running_;

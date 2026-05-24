@@ -9,7 +9,7 @@
 #include <unistd.h>
 
 UDPServer::UDPServer(uint16_t port, NodeManager& node_manager)
-    : port_(port), socket_fd_(-1), node_manager_(node_manager), running_(false) {}
+    : port_(port), socket_fd_(-1), forward_socket_fd_(-1), node_manager_(node_manager), running_(false) {}
 
 UDPServer::~UDPServer() {
     stop();
@@ -41,6 +41,12 @@ bool UDPServer::start() {
         return false;
     }
 
+    forward_socket_fd_ = socket(AF_INET, SOCK_DGRAM, 0);
+    std::memset(&forward_addr_, 0, sizeof(forward_addr_));
+    forward_addr_.sin_family = AF_INET;
+    forward_addr_.sin_addr.s_addr = inet_addr("127.0.0.1");
+    forward_addr_.sin_port = htons(5008);
+
     running_ = true;
     recv_thread_ = std::thread(&UDPServer::receiveLoop, this);
 
@@ -55,6 +61,10 @@ void UDPServer::stop() {
             // Close the socket to break the blocking recvfrom
             close(socket_fd_);
             socket_fd_ = -1;
+        }
+        if (forward_socket_fd_ >= 0) {
+            close(forward_socket_fd_);
+            forward_socket_fd_ = -1;
         }
         if (recv_thread_.joinable()) {
             recv_thread_.join();
@@ -85,6 +95,16 @@ void UDPServer::receiveLoop() {
             
             // Pass to node manager
             node_manager_.processPacket(ip_address, packet, n);
+
+            // Forward to Python server (prepend IP)
+            if (forward_socket_fd_ >= 0) {
+                char forward_buf[2048];
+                std::memset(forward_buf, 0, 16);
+                std::strncpy(forward_buf, ip_address.c_str(), 15);
+                std::memcpy(forward_buf + 16, buffer, n);
+                sendto(forward_socket_fd_, forward_buf, 16 + n, 0,
+                       (struct sockaddr *)&forward_addr_, sizeof(forward_addr_));
+            }
         }
     }
 }

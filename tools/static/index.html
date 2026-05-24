@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Locustracer UDP Monitor</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="header">
+        <h1>Locustracer <span>Monitor</span></h1>
+        <div class="status">
+            <div id="connection-dot" class="dot red"></div>
+            <span id="connection-status">Disconnected</span>
+        </div>
+    </div>
+    
+    <div id="grid" class="grid">
+        <!-- Node cards will be injected here dynamically -->
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
