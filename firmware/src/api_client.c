@@ -170,9 +170,11 @@ void api_client_init(void) {
 
 void api_client_task(void *pvParameters) {
     ESP_LOGI(TAG, "WebSocket Telemetry Task Started");
+    int consecutive_disconnects = 0;
 
     while (1) {
         if (esp_websocket_client_is_connected(ws_client)) {
+            consecutive_disconnects = 0;
             // Create JSON object for telemetry
             cJSON *root = cJSON_CreateObject();
             if (root) {
@@ -183,10 +185,23 @@ void api_client_task(void *pvParameters) {
                 
                 char *json_string = cJSON_PrintUnformatted(root);
                 if (json_string) {
-                    esp_websocket_client_send_text(ws_client, json_string, strlen(json_string), portMAX_DELAY);
+                    int bytes_sent = esp_websocket_client_send_text(ws_client, json_string, strlen(json_string), pdMS_TO_TICKS(500));
+                    if (bytes_sent < 0) {
+                        ESP_LOGE(TAG, "Failed to send telemetry. Socket might be dead. Forcing reconnect...");
+                        esp_websocket_client_stop(ws_client);
+                        esp_websocket_client_start(ws_client);
+                    }
                     free(json_string); // Free the string created by cJSON_PrintUnformatted
                 }
                 cJSON_Delete(root);
+            }
+        } else {
+            consecutive_disconnects++;
+            if (consecutive_disconnects >= 3) {
+                ESP_LOGW(TAG, "Websocket remains disconnected. Forcing restart of client...");
+                esp_websocket_client_stop(ws_client);
+                esp_websocket_client_start(ws_client);
+                consecutive_disconnects = 0;
             }
         }
 
