@@ -33,12 +33,17 @@ echo "Building and starting cpp_server..."
     fi
 ) &
 
-echo "Starting python monitoring server..."
-# Using the venv if it exists
-if [ -d ".venv" ]; then
-    source .venv/bin/activate
-fi
-python tools/monitor_server.py &
+echo "Starting Node.js Backend..."
+(
+    cd application/monitor_app/backend
+    npm start
+) &
+
+echo "Starting React Frontend (Port 5173)..."
+(
+    cd application/monitor_app/frontend
+    npm run dev -- --host
+) &
 
 echo "Starting API server..."
 python application/api_server.py &
