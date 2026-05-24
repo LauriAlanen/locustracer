@@ -40,8 +40,8 @@ if [ -d ".venv" ]; then
 fi
 python tools/monitor_server.py &
 
-echo "Starting mock websocket server..."
-python application/mock_server.py &
+echo "Starting API server..."
+python application/api_server.py &
 
 echo "All services started."
 echo "Press Ctrl+C to stop all services."

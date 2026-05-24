@@ -1,12 +1,21 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 import uvicorn
 import json
 
 app = FastAPI(
-    title="Locus API Mock Server",
-    description="A simple mock server for testing the ESP32 REST API Client."
+    title="Locustracer API Server",
+    description="Backend API and Websocket server for Locustracer."
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Define the expected JSON payload structure for telemetry

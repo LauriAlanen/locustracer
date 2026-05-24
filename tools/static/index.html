@@ -3,21 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Locustracer UDP Monitor</title>
+    <title>Locustracer Dashboard</title>
     <link rel="stylesheet" href="/static/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <div class="header">
-        <h1>Locustracer <span>Monitor</span></h1>
-        <div class="status">
-            <div id="connection-dot" class="dot red"></div>
-            <span id="connection-status">Disconnected</span>
-        </div>
+    <div class="background-effects">
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+        <div class="glow-orb orb-3"></div>
     </div>
-    
-    <div id="grid" class="grid">
-        <!-- Node cards will be injected here dynamically -->
+
+    <div class="dashboard-container">
+        <header class="header glass-panel">
+            <div class="brand">
+                <div class="logo-icon"><i class="fa-solid fa-satellite-dish"></i></div>
+                <h1>Locustracer <span>Nexus</span></h1>
+            </div>
+            
+            <div class="controls">
+                <button id="beep-btn" class="action-btn primary-glow">
+                    <i class="fa-solid fa-volume-high"></i> Sound Master Alarm
+                </button>
+                <div class="status-indicators">
+                    <div class="status-pill" id="ws-status">
+                        <div class="dot pulse-red"></div>
+                        <span>Stream Disconnected</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <section class="section">
+                <div class="section-header">
+                    <h2><i class="fa-solid fa-microchip"></i> Telemetry Overview</h2>
+                    <span class="subtitle">Live data from Locustracer API</span>
+                </div>
+                <div id="telemetry-grid" class="telemetry-grid">
+                    <!-- Telemetry cards injected here -->
+                    <div class="empty-state">Waiting for telemetry data...</div>
+                </div>
+            </section>
+
+            <section class="section">
+                <div class="section-header">
+                    <h2><i class="fa-solid fa-wave-square"></i> Live Audio Streams</h2>
+                    <span class="subtitle">Real-time acoustic signatures</span>
+                </div>
+                <div id="stream-grid" class="grid">
+                    <!-- Audio stream cards injected here -->
+                </div>
+            </section>
+        </main>
     </div>
 
     <script src="/static/app.js"></script>
