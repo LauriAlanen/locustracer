@@ -159,6 +159,9 @@ void api_client_init(void) {
     ESP_LOGI(TAG, "Initializing WebSocket Client");
     esp_websocket_client_config_t websocket_cfg = {};
     websocket_cfg.uri = WEBSOCKET_URL;
+    websocket_cfg.reconnect_timeout_ms = 5000;
+    websocket_cfg.network_timeout_ms = 5000;
+    websocket_cfg.ping_interval_sec = 10;
 
     ws_client = esp_websocket_client_init(&websocket_cfg);
     esp_websocket_register_events(ws_client, WEBSOCKET_EVENT_ANY, websocket_event_handler, (void *)ws_client);
