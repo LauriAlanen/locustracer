@@ -45,9 +45,6 @@ echo "Starting React Frontend (Port 5173)..."
     npm run dev -- --host
 ) &
 
-echo "Starting API server..."
-python application/api_server.py &
-
 echo "All services started."
 echo "Press Ctrl+C to stop all services."
 
