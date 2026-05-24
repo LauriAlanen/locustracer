@@ -74,9 +74,9 @@ void buzzer_set_frequency(uint32_t freq_hz)
     ESP_ERROR_CHECK(ledc_set_freq(BUZZER_LEDC_MODE, BUZZER_LEDC_TIMER, freq_hz));
 }
 
-void buzzer_play_pitch_effect(void)
+static void buzzer_pitch_task(void *pvParameters)
 {
-    ESP_LOGI(TAG, "Playing pitch effect");
+    ESP_LOGI(TAG, "Playing pitch effect task");
     buzzer_set_state(true);
     
     // Sweep up
@@ -91,6 +91,12 @@ void buzzer_play_pitch_effect(void)
     }
     
     buzzer_set_state(false);
+    vTaskDelete(NULL);
+}
+
+void buzzer_play_pitch_effect(void)
+{
+    xTaskCreate(buzzer_pitch_task, "buzzer_pitch_task", 2048, NULL, 5, NULL);
 }
 
 void buzzer_play_chirp_effect(void)

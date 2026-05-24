@@ -159,7 +159,10 @@ async def push_config(data: ConfigData):
     """
     global current_configs
     node_id = data.node_id
-    config_dict = data.dict(exclude={"node_id"})
+    if hasattr(data, "model_dump"):
+        config_dict = data.model_dump(exclude={"node_id"})
+    else:
+        config_dict = data.dict(exclude={"node_id"})
     
     # Store config but DO NOT persist 'buzzer_pitch' as True for future reconnects.
     stored_config = dict(config_dict)

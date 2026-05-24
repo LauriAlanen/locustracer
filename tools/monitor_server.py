@@ -118,7 +118,9 @@ async def websocket_endpoint(websocket: WebSocket):
                             urllib.request.urlopen(req, timeout=2)
                         except Exception as e:
                             print(f"Failed to relay beep: {e}")
-                    await asyncio.to_thread(relay_beep)
+                    
+                    loop = asyncio.get_running_loop()
+                    await loop.run_in_executor(None, relay_beep)
             except Exception as e:
                 pass
     except WebSocketDisconnect:
