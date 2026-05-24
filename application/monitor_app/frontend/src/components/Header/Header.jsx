@@ -5,6 +5,7 @@ import styles from './Header.module.css';
 export function Header({ wsStatus, masterNodeId, onBeep, onSetVolume }) {
     const [justBeeped, setJustBeeped] = useState(false);
     const [volume, setVolume] = useState(10); // default
+    const [buzzMode, setBuzzMode] = useState('pitch');
 
     const handleBeep = () => {
         if (!masterNodeId) {
@@ -13,7 +14,7 @@ export function Header({ wsStatus, masterNodeId, onBeep, onSetVolume }) {
         }
 
         if (wsStatus === 'connected') {
-            const success = onBeep(masterNodeId);
+            const success = onBeep(masterNodeId, buzzMode);
             if (success) {
                 setJustBeeped(true);
                 setTimeout(() => setJustBeeped(false), 1500);
@@ -47,6 +48,18 @@ export function Header({ wsStatus, masterNodeId, onBeep, onSetVolume }) {
                                 }}
                             />
                         </div>
+                        <select 
+                            className={styles.modeSelect}
+                            value={buzzMode}
+                            onChange={(e) => setBuzzMode(e.target.value)}
+                        >
+                            <option value="pitch">Pitch Sweep</option>
+                            <option value="single_beep">Single Beep</option>
+                            <option value="chirp">Chirp</option>
+                            <option value="fast_beeps">Fast Beeps</option>
+                            <option value="siren">Siren</option>
+                            <option value="rumble">Rumble</option>
+                        </select>
                         <button
                             onClick={handleBeep}
                             className={`${styles.actionBtn} ${justBeeped ? styles.btnSuccess : ''}`}

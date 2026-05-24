@@ -46,6 +46,30 @@ void buzzer_play_pitch_effect(void);
  */
 void buzzer_play_chirp_effect(void);
 
+/**
+ * @brief Play fast consecutive beeps.
+ * Non-blocking (runs in its own task like pitch_effect).
+ */
+void buzzer_play_fast_beeps(void);
+
+/**
+ * @brief Play a single fast beep.
+ * Non-blocking.
+ */
+void buzzer_play_single_beep(void);
+
+/**
+ * @brief Play a siren effect.
+ * Non-blocking.
+ */
+void buzzer_play_siren(void);
+
+/**
+ * @brief Play a low frequency rumble effect.
+ * Non-blocking.
+ */
+void buzzer_play_rumble(void);
+
 #ifdef __cplusplus
 }
 #endif

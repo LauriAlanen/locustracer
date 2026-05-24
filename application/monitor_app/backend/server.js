@@ -33,7 +33,6 @@ const latestTelemetry = {
 const currentConfigs = {};
 const defaultConfig = {
     buzzer_state: false,
-    buzzer_pitch: false,
     buzzer_volume: 1,
     poll_interval_ms: 5000
 };
@@ -90,13 +89,12 @@ app.post('/config', (req, res) => {
     // Pydantic-like default handling
     const newConfig = {
         buzzer_state: data.buzzer_state !== undefined ? data.buzzer_state : false,
-        buzzer_pitch: data.buzzer_pitch !== undefined ? data.buzzer_pitch : false,
         buzzer_volume: data.buzzer_volume !== undefined ? data.buzzer_volume : 1,
         poll_interval_ms: data.poll_interval_ms !== undefined ? data.poll_interval_ms : 5000
     };
 
-    // Store config but DO NOT persist 'buzzer_pitch' as true for future reconnects.
-    const storedConfig = { ...newConfig, buzzer_pitch: false };
+    // Store config 
+    const storedConfig = { ...newConfig };
     currentConfigs[nodeId] = storedConfig;
 
     console.log(`==== Updated Config for ${nodeId} ====\n${JSON.stringify(newConfig)}\n`);
@@ -225,13 +223,14 @@ wss.on('connection', (ws, request, type) => {
                 const nodeId = data.node_id;
                 if (!nodeId) return;
 
-                // Handle commands natively instead of making HTTP requests!
                 const currentConfig = currentConfigs[nodeId] || { ...defaultConfig };
 
                 if (data.action === 'beep') {
-                    console.log(`UI requested Beep for ${nodeId}`);
-                    // Push beep command to ESP32
-                    const newConfig = { ...currentConfig, buzzer_pitch: true };
+                    const mode = data.mode || 'pitch';
+                    console.log(`UI requested Beep (${mode}) for ${nodeId}`);
+                    
+                    // Add buzzer_mode as a transient event trigger (not persisted to currentConfigs)
+                    const newConfig = { ...currentConfig, buzzer_mode: mode };
                     
                     const espWs = esp32Connections.get(nodeId);
                     if (espWs && espWs.readyState === 1) {
@@ -244,7 +243,7 @@ wss.on('connection', (ws, request, type) => {
                     currentConfig.buzzer_volume = parseInt(data.volume);
                     currentConfigs[nodeId] = currentConfig;
                     
-                    const newConfig = { ...currentConfig, buzzer_pitch: false };
+                    const newConfig = { ...currentConfig };
                     
                     const espWs = esp32Connections.get(nodeId);
                     if (espWs && espWs.readyState === 1) {
