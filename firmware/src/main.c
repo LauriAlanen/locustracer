@@ -56,7 +56,6 @@ void app_main(void)
     init_mdns();
     ota_manager_init();
     
-    // IMPORTANT: THESE WERE COMMENTED OUT IN YOUR STASH! 
     // This is why no data was sending to the C++ Server!
     tsf_sender_init();
     audio_transmitter_init();
