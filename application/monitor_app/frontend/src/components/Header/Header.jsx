@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { SatelliteDish, Volume2, Check } from 'lucide-react';
 import styles from './Header.module.css';
 
-export function Header({ wsStatus, masterNodeId, onBeep }) {
+export function Header({ wsStatus, masterNodeId, onBeep, onSetVolume }) {
     const [justBeeped, setJustBeeped] = useState(false);
+    const [volume, setVolume] = useState(10); // default
 
     const handleBeep = () => {
         if (!masterNodeId) {
@@ -32,15 +33,29 @@ export function Header({ wsStatus, masterNodeId, onBeep }) {
             </div>
 
             <div className={styles.controls}>
-                <button
-                    onClick={handleBeep}
-                    className={`${styles.actionBtn} ${justBeeped ? styles.btnSuccess : ''}`}
-                    disabled={!masterNodeId}
-                    style={{ opacity: masterNodeId ? 1 : 0.5, cursor: masterNodeId ? 'pointer' : 'not-allowed' }}
-                >
-                    {justBeeped ? <Check size={20} /> : <Volume2 size={20} />}
-                    {justBeeped ? 'Command Sent!' : 'Beep Master Node'}
-                </button>
+                {masterNodeId ? (
+                    <div className={styles.masterControls}>
+                        <div className={styles.volumeControl}>
+                            <Volume2 size={16} />
+                            <input 
+                                type="range" 
+                                min="0" max="100" 
+                                value={volume} 
+                                onChange={(e) => {
+                                    setVolume(e.target.value);
+                                    if(onSetVolume) onSetVolume(masterNodeId, e.target.value);
+                                }}
+                            />
+                        </div>
+                        <button
+                            onClick={handleBeep}
+                            className={`${styles.actionBtn} ${justBeeped ? styles.btnSuccess : ''}`}
+                        >
+                            {justBeeped ? <Check size={20} /> : <Volume2 size={20} />}
+                            {justBeeped ? 'Command Sent!' : 'Beep Master Node'}
+                        </button>
+                    </div>
+                ) : null}
 
                 <div className={styles.statusIndicators}>
                     <div className={styles.statusPill}>

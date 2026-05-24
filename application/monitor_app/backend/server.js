@@ -80,12 +80,21 @@ wss.on('connection', (ws) => {
         try {
             const data = JSON.parse(message);
             if (data.action === 'beep' && data.node_id) {
-                // Relay the beep command to Python API server
                 console.log(`Relaying beep command for node ${data.node_id}`);
+                // Fetch current config to avoid overwriting volume/settings with defaults
+                let currentConfig = {};
+                try {
+                    const getResp = await fetch(`${API_SERVER_URL}/config?node_id=${data.node_id}`);
+                    if (getResp.ok) currentConfig = await getResp.json();
+                } catch (e) {
+                    console.error("Failed to fetch current config", e);
+                }
+
                 const response = await fetch(`${API_SERVER_URL}/config`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
+                        ...currentConfig,
                         node_id: data.node_id,
                         buzzer_pitch: true
                     })
@@ -93,6 +102,31 @@ wss.on('connection', (ws) => {
                 
                 if (!response.ok) {
                     console.error('Failed to relay beep command', await response.text());
+                }
+            } else if (data.action === 'set_volume' && data.node_id && data.volume !== undefined) {
+                console.log(`Relaying volume ${data.volume} command for node ${data.node_id}`);
+                
+                // Fetch current config
+                let currentConfig = {};
+                try {
+                    const getResp = await fetch(`${API_SERVER_URL}/config?node_id=${data.node_id}`);
+                    if (getResp.ok) currentConfig = await getResp.json();
+                } catch (e) {
+                    console.error("Failed to fetch current config", e);
+                }
+
+                const response = await fetch(`${API_SERVER_URL}/config`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ...currentConfig,
+                        node_id: data.node_id,
+                        buzzer_volume: parseInt(data.volume)
+                    })
+                });
+                
+                if (!response.ok) {
+                    console.error('Failed to relay set_volume command', await response.text());
                 }
             }
         } catch (error) {

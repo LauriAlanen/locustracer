@@ -8,7 +8,7 @@ import { Microchip, Activity } from 'lucide-react';
 
 function App() {
     const { telemetryData, masterNodeId } = useTelemetry();
-    const { status: wsStatus, audioDataRef, sendBeep } = useAudioWebSocket();
+    const { status: wsStatus, audioDataRef, sendBeep, sendVolume } = useAudioWebSocket();
 
     return (
         <>
@@ -23,6 +23,7 @@ function App() {
                     wsStatus={wsStatus}
                     masterNodeId={masterNodeId}
                     onBeep={sendBeep}
+                    onSetVolume={sendVolume}
                 />
 
                 <main>

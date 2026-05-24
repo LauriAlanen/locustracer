@@ -55,6 +55,17 @@ export function useAudioWebSocket(url = 'ws://127.0.0.1:8010') {
         }
         return false;
     }, []);
+    const sendVolume = useCallback((nodeId, volume) => {
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+            wsRef.current.send(JSON.stringify({
+                action: 'set_volume',
+                node_id: nodeId,
+                volume: volume
+            }));
+            return true;
+        }
+        return false;
+    }, []);
 
-    return { status, audioDataRef, sendBeep };
+    return { status, audioDataRef, sendBeep, sendVolume };
 }
