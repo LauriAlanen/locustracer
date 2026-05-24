@@ -216,4 +216,8 @@ marimo/_lsp/
 __marimo__/
 
 # Streamlit
-.streamlit/secrets.toml
+.streamlit/secrets.tomlapplication/cpp_server/CMakeCache.txt
+application/cpp_server/CMakeFiles/
+application/cpp_server/Makefile
+application/cpp_server/cmake_install.cmake
+application/cpp_server/locustracer_server

@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
 
     // Main loop: Print statistics periodically
     while (global_running) {
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::seconds(3));
         
         // Print and reset the 1-second rate counters
         node_manager.printAndResetStats();

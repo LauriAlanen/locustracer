@@ -46,6 +46,28 @@ void wifi_manager_init(void)
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
+    uint8_t mac[6];
+    esp_wifi_get_mac(WIFI_IF_STA, mac);
+
+#if defined(BOARD_LOLIN_S2_MINI)
+    const char* model = "s2mini";
+#elif defined(BOARD_ESP32_S3_DEVKITC_1)
+    const char* model = "s3devkit";
+#else
+    const char* model = "xiao";
+#endif
+
+#if NODE_IS_MASTER
+    const char* type = "master";
+#else
+    const char* type = "listener";
+#endif
+
+    char hostname[32];
+    snprintf(hostname, sizeof(hostname), "%s-%s", model, type);
+    esp_netif_set_hostname(sta_netif, hostname);
+
+
     esp_event_handler_instance_t instance_any_id;
     esp_event_handler_instance_t instance_got_ip;
     ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,

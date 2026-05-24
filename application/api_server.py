@@ -1,12 +1,21 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 import uvicorn
 import json
 
 app = FastAPI(
-    title="Locus API Mock Server",
-    description="A simple mock server for testing the ESP32 REST API Client."
+    title="Locustracer API Server",
+    description="Backend API and Websocket server for Locustracer."
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Define the expected JSON payload structure for telemetry
@@ -150,7 +159,10 @@ async def push_config(data: ConfigData):
     """
     global current_configs
     node_id = data.node_id
-    config_dict = data.dict(exclude={"node_id"})
+    if hasattr(data, "model_dump"):
+        config_dict = data.model_dump(exclude={"node_id"})
+    else:
+        config_dict = data.dict(exclude={"node_id"})
     
     # Store config but DO NOT persist 'buzzer_pitch' as True for future reconnects.
     stored_config = dict(config_dict)
