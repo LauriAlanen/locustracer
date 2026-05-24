@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <mutex>
 #include <vector>
+#include <memory>
 
 struct NodeStats {
     std::string ip_address;
@@ -19,9 +20,11 @@ struct NodeStats {
     uint32_t packets_since_last_check = 0;
 };
 
+class AudioSynchronizer;
+
 class NodeManager {
 public:
-    NodeManager() = default;
+    NodeManager(std::shared_ptr<AudioSynchronizer> synchronizer);
 
     // Process an incoming packet
     void processPacket(const std::string& ip_address, const AudioPacket* packet, size_t packet_size);
@@ -32,6 +35,7 @@ public:
 private:
     std::unordered_map<std::string, NodeStats> nodes_;
     std::mutex mutex_;
+    std::shared_ptr<AudioSynchronizer> synchronizer_;
 };
 
 #endif // NODEMANAGER_H
