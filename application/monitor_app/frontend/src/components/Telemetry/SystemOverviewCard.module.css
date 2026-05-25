@@ -1,0 +1,88 @@
+.card {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    background: linear-gradient(145deg, rgba(20, 20, 30, 0.7), rgba(10, 10, 15, 0.9));
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 1rem;
+}
+
+.title {
+    font-weight: 600;
+    font-size: 1.2rem;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.iconPrimary {
+    color: var(--accent-primary, #00f0ff);
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.statItem {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.02);
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.statItem:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.label {
+    font-size: 0.85rem;
+    color: var(--text-muted, #8b8b9b);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    font-family: 'SF Mono', Consolas, monospace;
+    color: #fff;
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+}
+
+.unit {
+    font-size: 0.9rem;
+    color: var(--text-muted, #8b8b9b);
+    font-weight: 500;
+}
+
+.warning {
+    color: #ff4757;
+}
+
+.good {
+    color: #2ed573;
+}

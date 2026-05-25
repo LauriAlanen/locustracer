@@ -12,6 +12,9 @@ RUN rm -f /etc/apt/sources.list.d/yarn.list && \
     udev \
     sudo
 
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs
+
 RUN curl -fsSL https://raw.githubusercontent.com/platformio/platformio-core/develop/platformio/assets/system/99-platformio-udev.rules \
     -o /etc/udev/rules.d/99-platformio-udev.rules
 
@@ -20,5 +23,8 @@ RUN groupadd -f dialout && groupadd -f plugdev \
     && usermod -a -G plugdev ${USERNAME}
 
 RUN pip install --upgrade pip
+
+RUN mkdir -p /home/${USERNAME}/.vscode-server/extensions /home/${USERNAME}/.platformio \
+    && chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}/.vscode-server /home/${USERNAME}/.platformio
 
 USER ${USERNAME}

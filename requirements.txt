@@ -2,4 +2,6 @@ platformio
 librosa
 numpy
 soundfile
-matplotlib
+fastapi
+pydantic
+uvicorn
