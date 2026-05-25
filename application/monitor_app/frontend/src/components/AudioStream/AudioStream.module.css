@@ -10,6 +10,12 @@
     animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+.combinedCard {
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 .card:hover {
     transform: translateY(-5px);
     border-color: rgba(0, 240, 255, 0.3);
@@ -36,6 +42,10 @@
     color: var(--text-muted);
 }
 
+.iconPrimary {
+    color: var(--primary);
+}
+
 .badge {
     background: rgba(0, 230, 118, 0.15);
     color: var(--success);
@@ -49,12 +59,52 @@
     gap: 0.3rem;
 }
 
+.liveButton {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.liveButton:hover {
+    background: rgba(0, 240, 255, 0.2);
+    border-color: rgba(0, 240, 255, 0.5);
+    color: var(--primary);
+}
+
+.canvasContainer {
+    width: 100%;
+    overflow: hidden;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.05);
+    position: relative;
+}
+
 .canvas {
     width: 100%;
     height: 180px;
+    display: block;
     background: transparent;
-    border-radius: 12px;
-    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.combinedCanvas {
+    width: 100%;
+    height: 300px;
+    display: block;
+    background: transparent;
+    cursor: grab;
+}
+
+.combinedCanvas:active {
+    cursor: grabbing;
 }
 
 .emptyState {

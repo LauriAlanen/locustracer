@@ -26,7 +26,22 @@ const nodeData = {};
 const latestTelemetry = {
     master: {},
     listener: {},
-    unknown: {}
+    unknown: {},
+    system: {
+        tsf_variance_us: 0,
+        bandwidth_mbps: "0.00",
+        packet_loss: 0,
+        active_nodes: 0
+    }
+};
+
+// Global System Statistics State
+const sysStats = {
+    bytesSinceLastCheck: 0,
+    packetsLostSinceLastCheck: 0,
+    lastSeqIds: {},
+    latestTsfs: {},
+    activeNodes: new Set()
 };
 
 // Config State
@@ -74,6 +89,31 @@ CPU:  ${data.cpu_temp}
 app.get('/telemetry', (req, res) => {
     res.json(latestTelemetry);
 });
+
+// Periodic System Stats Calculator (Runs every 1s)
+setInterval(() => {
+    const mbps = (sysStats.bytesSinceLastCheck * 8) / 1000000;
+    
+    let minOffset = null;
+    let maxOffset = null;
+    for (const ip in sysStats.latestTsfs) {
+        const offset = sysStats.latestTsfs[ip];
+        if (minOffset === null || offset < minOffset) minOffset = offset;
+        if (maxOffset === null || offset > maxOffset) maxOffset = offset;
+    }
+    const variance = (minOffset !== null && maxOffset !== null) ? Math.round(Math.abs(maxOffset - minOffset)) : 0;
+
+    latestTelemetry.system = {
+        tsf_variance_us: variance,
+        bandwidth_mbps: mbps.toFixed(2),
+        packet_loss: sysStats.packetsLostSinceLastCheck,
+        active_nodes: sysStats.activeNodes.size
+    };
+
+    sysStats.bytesSinceLastCheck = 0;
+    sysStats.packetsLostSinceLastCheck = 0;
+    sysStats.activeNodes.clear(); // Reset to only count actively streaming nodes
+}, 1000);
 
 app.get('/config', (req, res) => {
     const nodeId = req.query.node_id;
@@ -133,6 +173,32 @@ udpServer.on('message', (msg, rinfo) => {
         if (ipBytes[i] === 0) break;
         ip += String.fromCharCode(ipBytes[i]);
     }
+
+    // Process network statistics
+    sysStats.bytesSinceLastCheck += msg.length;
+    sysStats.activeNodes.add(ip);
+
+    const seqId = msg.readUInt32LE(16);
+    const tsfTime = msg.readBigUInt64LE(20);
+
+    // Calculate actual hardware drift by finding the offset against the local high-res server time
+    const serverTimeUs = Number(process.hrtime.bigint() / 1000n);
+    const offset = Number(tsfTime) - serverTimeUs;
+
+    if (sysStats.latestTsfs[ip] === undefined) {
+        sysStats.latestTsfs[ip] = offset;
+    } else {
+        // Use an Exponential Moving Average (EMA) to completely smooth out Wi-Fi transmission jitter
+        sysStats.latestTsfs[ip] = (sysStats.latestTsfs[ip] * 0.95) + (offset * 0.05);
+    }
+
+    if (sysStats.lastSeqIds[ip] !== undefined) {
+        const expected = sysStats.lastSeqIds[ip] + 1;
+        if (seqId > expected) {
+            sysStats.packetsLostSinceLastCheck += (seqId - expected);
+        }
+    }
+    sysStats.lastSeqIds[ip] = seqId;
 
     const audioBytes = msg.subarray(28);
     const numSamples = Math.floor(audioBytes.length / 4);
@@ -285,7 +351,7 @@ wss.on('connection', (ws, request, type) => {
     }
 });
 
-// Broadcast UDP Audio to UI loops at ~30FPS
+// Broadcast UDP Audio to UI loops at ~60FPS
 setInterval(() => {
     if (uiConnections.size > 0) {
         const payload = JSON.stringify(nodeData);
@@ -295,7 +361,7 @@ setInterval(() => {
             }
         });
     }
-}, 1000 / 30);
+}, 1000 / 60);
 
 
 // ----------------------------------------------------
