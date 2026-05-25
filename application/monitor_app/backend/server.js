@@ -49,7 +49,12 @@ const uiConnections = new Set();
 
 app.post('/telemetry', (req, res) => {
     const data = req.body;
-    const nodeId = data.node_id || 'unknown';
+    let ip = req.socket.remoteAddress;
+    if (ip && ip.startsWith('::ffff:')) {
+        ip = ip.substring(7);
+    }
+    const nodeId = ip || 'unknown';
+    data.node_id = nodeId; // Override MAC with IP for UI
     const nodeType = data.node_type || 'unknown';
 
     if (!latestTelemetry[nodeType]) {
@@ -178,16 +183,24 @@ server.on('upgrade', (request, socket, head) => {
 
 wss.on('connection', (ws, request, type) => {
     if (type === 'esp32') {
-        let assignedNodeId = null;
+        let ip = request.socket.remoteAddress;
+        if (ip && ip.startsWith('::ffff:')) {
+            ip = ip.substring(7);
+        }
+        const nodeId = ip || 'unknown';
+        let isConfigSent = false;
         
         ws.on('message', (message) => {
             try {
                 const telemetry = JSON.parse(message);
-                const nodeId = telemetry.node_id || 'unknown';
+                const originalMac = telemetry.node_id;
+                telemetry.node_id = nodeId; // Override MAC with IP
+                telemetry.mac_address = originalMac || 'unknown'; // Keep MAC in a separate field just in case
+                
                 const nodeType = telemetry.node_type || 'unknown';
                 
-                if (!assignedNodeId) {
-                    assignedNodeId = nodeId;
+                if (!isConfigSent) {
+                    isConfigSent = true;
                     esp32Connections.set(nodeId, ws);
                     // Send initial config
                     const config = currentConfigs[nodeId] || { ...defaultConfig };
@@ -208,8 +221,8 @@ wss.on('connection', (ws, request, type) => {
         });
 
         ws.on('close', () => {
-            if (assignedNodeId) {
-                esp32Connections.delete(assignedNodeId);
+            if (nodeId && esp32Connections.get(nodeId) === ws) {
+                esp32Connections.delete(nodeId);
             }
         });
 
