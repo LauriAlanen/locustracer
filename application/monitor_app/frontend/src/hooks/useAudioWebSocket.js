@@ -68,5 +68,16 @@ export function useAudioWebSocket(url = 'ws://127.0.0.1:8009/ui-ws') {
         return false;
     }, []);
 
-    return { status, audioDataRef, sendBeep, sendVolume };
+    const sendIdentify = useCallback((nodeId) => {
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+            wsRef.current.send(JSON.stringify({
+                action: 'identify',
+                node_id: nodeId
+            }));
+            return true;
+        }
+        return false;
+    }, []);
+
+    return { status, audioDataRef, sendBeep, sendVolume, sendIdentify };
 }

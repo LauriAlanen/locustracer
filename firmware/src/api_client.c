@@ -9,6 +9,7 @@
 #include "buzzer.h"
 #include "shtc3.h"
 #include "esp_mac.h"
+#include "led_indicator.h"
 
 static const char *TAG = "API_CLIENT";
 
@@ -25,11 +26,18 @@ void api_client_set_node_type(bool is_master) {
 float get_cpu_temp(void) { return 42.0f; }
 
 // --- Command Dispatcher Architecture ---
+typedef enum {
+    NODE_TYPE_ANY = 0,
+    NODE_TYPE_MASTER_ONLY,
+    NODE_TYPE_LISTENER_ONLY
+} api_node_req_t;
+
 typedef void (*api_command_handler_t)(cJSON *value);
 
 typedef struct {
     const char *key;
     api_command_handler_t handler;
+    api_node_req_t node_req;
 } api_command_t;
 
 static void handle_buzzer_state(cJSON *value) {
@@ -72,12 +80,20 @@ static void handle_buzzer_volume(cJSON *value) {
     }
 }
 
+static void handle_led_identify(cJSON *value) {
+    if (cJSON_IsTrue(value)) {
+        ESP_LOGI(TAG, "LED Identify triggered via API");
+        led_indicator_identify();
+    }
+}
+
 // Add new command handlers here to scale the API
 // Note: Order matters! Process configurations (like volume) before triggers (like pitch or state).
 static const api_command_t api_commands[] = {
-    {"buzzer_volume", handle_buzzer_volume},
-    {"buzzer_state", handle_buzzer_state},
-    {"buzzer_mode", handle_buzzer_mode},
+    {"buzzer_volume", handle_buzzer_volume, NODE_TYPE_MASTER_ONLY},
+    {"buzzer_state", handle_buzzer_state, NODE_TYPE_MASTER_ONLY},
+    {"buzzer_mode", handle_buzzer_mode, NODE_TYPE_MASTER_ONLY},
+    {"led_identify", handle_led_identify, NODE_TYPE_ANY},
 };
 #define NUM_API_COMMANDS (sizeof(api_commands) / sizeof(api_commands[0]))
 
@@ -150,12 +166,19 @@ static void websocket_event_handler(void *handler_args, esp_event_base_t base, i
                 // Parse the JSON payload
                 cJSON *root = cJSON_Parse(json_str);
                 if (root != NULL) {
-                    if (g_is_master_node) {
-                        // Iterate through known commands and call their handler if present in payload
-                        for (int i = 0; i < NUM_API_COMMANDS; i++) {
-                            cJSON *cmd_val = cJSON_GetObjectItemCaseSensitive(root, api_commands[i].key);
-                            if (cmd_val != NULL) {
+                    // Iterate through known commands and call their handler if present in payload
+                    for (int i = 0; i < NUM_API_COMMANDS; i++) {
+                        cJSON *cmd_val = cJSON_GetObjectItemCaseSensitive(root, api_commands[i].key);
+                        if (cmd_val != NULL) {
+                            bool can_execute = false;
+                            if (api_commands[i].node_req == NODE_TYPE_ANY) can_execute = true;
+                            else if (api_commands[i].node_req == NODE_TYPE_MASTER_ONLY && g_is_master_node) can_execute = true;
+                            else if (api_commands[i].node_req == NODE_TYPE_LISTENER_ONLY && !g_is_master_node) can_execute = true;
+
+                            if (can_execute) {
                                 api_commands[i].handler(cmd_val);
+                            } else {
+                                ESP_LOGD(TAG, "Ignoring command %s for this node type", api_commands[i].key);
                             }
                         }
                     }

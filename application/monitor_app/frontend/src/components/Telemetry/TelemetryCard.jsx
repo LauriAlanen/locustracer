@@ -1,8 +1,8 @@
 import React from 'react';
-import { Cpu, Thermometer, Droplets, Microchip, Crown } from 'lucide-react';
+import { Cpu, Thermometer, Droplets, Microchip, Crown, Lightbulb } from 'lucide-react';
 import styles from './Telemetry.module.css';
 
-export function TelemetryCard({ nodeId, isMaster, data }) {
+export function TelemetryCard({ nodeId, isMaster, data, onIdentify }) {
     return (
         <div className={`glass-panel ${styles.card}`}>
             <div className={styles.header}>
@@ -10,8 +10,17 @@ export function TelemetryCard({ nodeId, isMaster, data }) {
                     <Microchip size={18} />
                     {nodeId}
                 </div>
-                <div className={`${styles.badge} ${isMaster ? styles.badgeMaster : ''}`}>
-                    {isMaster ? <><Crown size={12} /> Master</> : 'Listener'}
+                <div className={styles.headerActions}>
+                    <div className={`${styles.badge} ${isMaster ? styles.badgeMaster : ''}`}>
+                        {isMaster ? <><Crown size={12} /> Master</> : 'Listener'}
+                    </div>
+                    <button 
+                        className={styles.identifyBtn} 
+                        onClick={() => onIdentify && onIdentify(nodeId)}
+                        title="Identify Node"
+                    >
+                        <Lightbulb size={16} />
+                    </button>
                 </div>
             </div>
             

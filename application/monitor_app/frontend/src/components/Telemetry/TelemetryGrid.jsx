@@ -2,7 +2,7 @@ import React from 'react';
 import { TelemetryCard } from './TelemetryCard';
 import styles from './Telemetry.module.css';
 
-export function TelemetryGrid({ telemetryData }) {
+export function TelemetryGrid({ telemetryData, onIdentify }) {
     let hasData = false;
     const cards = [];
 
@@ -16,6 +16,7 @@ export function TelemetryGrid({ telemetryData }) {
                         nodeId={nodeId} 
                         isMaster={nodeType === 'master'} 
                         data={data} 
+                        onIdentify={onIdentify}
                     />
                 );
             });

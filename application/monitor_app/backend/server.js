@@ -250,6 +250,16 @@ wss.on('connection', (ws, request, type) => {
                         espWs.send(JSON.stringify(newConfig));
                     }
                 }
+                else if (data.action === 'identify') {
+                    console.log(`UI requested Identify for ${nodeId}`);
+                    // Transient event trigger
+                    const newConfig = { ...currentConfig, led_identify: true };
+                    
+                    const espWs = esp32Connections.get(nodeId);
+                    if (espWs && espWs.readyState === 1) {
+                        espWs.send(JSON.stringify(newConfig));
+                    }
+                }
             } catch (error) {
                 console.error('Failed to parse UI WS message:', error);
             }

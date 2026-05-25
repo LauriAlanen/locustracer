@@ -8,7 +8,7 @@ import { Microchip, Activity } from 'lucide-react';
 
 function App() {
     const { telemetryData, masterNodeId } = useTelemetry();
-    const { status: wsStatus, audioDataRef, sendBeep, sendVolume } = useAudioWebSocket();
+    const { status: wsStatus, audioDataRef, sendBeep, sendVolume, sendIdentify } = useAudioWebSocket();
 
     return (
         <>
@@ -32,7 +32,7 @@ function App() {
                             <h2><Microchip size={24} /> Telemetry Overview</h2>
                             <span className="subtitle">Live data from Locus API</span>
                         </div>
-                        <TelemetryGrid telemetryData={telemetryData} />
+                        <TelemetryGrid telemetryData={telemetryData} onIdentify={sendIdentify} />
                     </section>
 
                     <section className="section">
