@@ -10,6 +10,7 @@
 #include "shtc3.h"
 #include "esp_mac.h"
 #include "led_indicator.h"
+#include "driver/temperature_sensor.h"
 
 static const char *TAG = "API_CLIENT";
 
@@ -23,7 +24,28 @@ void api_client_set_node_type(bool is_master) {
 #define WEBSOCKET_URL "ws://192.168.3.65:8009/ws"
 #define API_TASK_DELAY_MS 5000 // 5 seconds for telemetry
 
-float get_cpu_temp(void) { return 42.0f; }
+static temperature_sensor_handle_t temp_sensor = NULL;
+
+static void init_cpu_temp_sensor(void) {
+    ESP_LOGI(TAG, "Install internal temperature sensor");
+    // Range 20C to 100C is typical for internal CPU monitoring
+    temperature_sensor_config_t temp_sensor_config = TEMPERATURE_SENSOR_CONFIG_DEFAULT(20, 100);
+    esp_err_t err = temperature_sensor_install(&temp_sensor_config, &temp_sensor);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to install temperature sensor");
+        return;
+    }
+    ESP_ERROR_CHECK(temperature_sensor_enable(temp_sensor));
+}
+
+float get_cpu_temp(void) {
+    if (temp_sensor == NULL) return -1.0f;
+    float temp_out = 0.0f;
+    if (temperature_sensor_get_celsius(temp_sensor, &temp_out) == ESP_OK) {
+        return temp_out;
+    }
+    return -1.0f;
+}
 
 // --- Command Dispatcher Architecture ---
 typedef enum {
@@ -195,6 +217,8 @@ static void websocket_event_handler(void *handler_args, esp_event_base_t base, i
 }
 
 void api_client_init(void) {
+    init_cpu_temp_sensor();
+    
     ESP_LOGI(TAG, "Initializing WebSocket Client");
     esp_websocket_client_config_t websocket_cfg = {};
     websocket_cfg.uri = WEBSOCKET_URL;
