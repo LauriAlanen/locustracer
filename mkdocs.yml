@@ -1,0 +1,25 @@
+site_name: Locus Tracer Documentation
+site_description: Documentation for the Locus Tracer acoustic localization system.
+site_author: Locus Tracer Team
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - toc.integrate
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+  palette:
+    - scheme: slate
+      primary: indigo
+      accent: cyan
+
+nav:
+  - Home: index.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
