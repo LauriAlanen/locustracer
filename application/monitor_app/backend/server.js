@@ -285,7 +285,7 @@ wss.on('connection', (ws, request, type) => {
     }
 });
 
-// Broadcast UDP Audio to UI loops at ~30FPS
+// Broadcast UDP Audio to UI loops at ~60FPS
 setInterval(() => {
     if (uiConnections.size > 0) {
         const payload = JSON.stringify(nodeData);
@@ -295,7 +295,7 @@ setInterval(() => {
             }
         });
     }
-}, 1000 / 30);
+}, 1000 / 60);
 
 
 // ----------------------------------------------------

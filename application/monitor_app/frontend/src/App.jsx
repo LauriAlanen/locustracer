@@ -2,9 +2,10 @@ import React from 'react';
 import { Header } from './components/Header/Header';
 import { TelemetryGrid } from './components/Telemetry/TelemetryGrid';
 import { AudioStreamGrid } from './components/AudioStream/AudioStreamGrid';
+import { CombinedAudioStreamChart } from './components/AudioStream/CombinedAudioStreamChart';
 import { useTelemetry } from './hooks/useTelemetry';
 import { useAudioWebSocket } from './hooks/useAudioWebSocket';
-import { Microchip, Activity } from 'lucide-react';
+import { Microchip, Activity, Layers } from 'lucide-react';
 
 function App() {
     const { telemetryData, masterNodeId } = useTelemetry();
@@ -33,6 +34,14 @@ function App() {
                             <span className="subtitle">Live data from Locus API</span>
                         </div>
                         <TelemetryGrid telemetryData={telemetryData} onIdentify={sendIdentify} />
+                    </section>
+
+                    <section className="section">
+                        <div className="section-header">
+                            <h2><Layers size={24} /> Combined Audio Analysis</h2>
+                            <span className="subtitle">Interactive timeline</span>
+                        </div>
+                        <CombinedAudioStreamChart audioDataRef={audioDataRef} />
                     </section>
 
                     <section className="section">
