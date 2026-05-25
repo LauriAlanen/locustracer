@@ -8,6 +8,8 @@ export function TelemetryGrid({ telemetryData, onIdentify }) {
 
     if (telemetryData) {
         Object.entries(telemetryData).forEach(([nodeType, nodes]) => {
+            if (nodeType === 'system') return; // Skip global system stats
+            
             Object.entries(nodes).forEach(([nodeId, data]) => {
                 hasData = true;
                 cards.push(
