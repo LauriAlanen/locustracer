@@ -11,6 +11,12 @@
 #define BLINK_GPIO 21
 #endif
 
+static volatile int g_identify_ticks = 0;
+
+void led_indicator_identify(void) {
+    g_identify_ticks = 50; // 5 seconds at 100ms per tick
+}
+
 static void led_indicator_task(void *pvParameters) {
 #ifdef BOARD_ESP32_S3_DEVKITC_1
     // Configure the NeoPixel RGB LED on DevKitC-1
@@ -27,26 +33,45 @@ static void led_indicator_task(void *pvParameters) {
 
     uint8_t led_state = 0;
     while (1) {
-        if (led_state) {
-            // Heartbeat: Faint blue color
-            led_strip_set_pixel(led_strip, 0, 0, 0, 16);
+        if (g_identify_ticks > 0) {
+            if (led_state) {
+                // Bright white for identify
+                led_strip_set_pixel(led_strip, 0, 255, 255, 255);
+            } else {
+                led_strip_clear(led_strip);
+            }
             led_strip_refresh(led_strip);
+            led_state = !led_state;
+            g_identify_ticks--;
+            vTaskDelay(100 / portTICK_PERIOD_MS);
         } else {
-            led_strip_clear(led_strip);
+            if (led_state) {
+                // Heartbeat: Faint blue color
+                led_strip_set_pixel(led_strip, 0, 0, 0, 16);
+                led_strip_refresh(led_strip);
+            } else {
+                led_strip_clear(led_strip);
+            }
+            led_state = !led_state;
+            vTaskDelay(1000 / portTICK_PERIOD_MS);
         }
-        led_state = !led_state;
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 #else
     gpio_reset_pin(BLINK_GPIO);
     gpio_set_direction(BLINK_GPIO, GPIO_MODE_OUTPUT);
 
+    uint8_t led_state = 0;
     while (1) {
-        gpio_set_level(BLINK_GPIO, 1);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-
-        gpio_set_level(BLINK_GPIO, 0);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        if (g_identify_ticks > 0) {
+            gpio_set_level(BLINK_GPIO, led_state);
+            led_state = !led_state;
+            g_identify_ticks--;
+            vTaskDelay(100 / portTICK_PERIOD_MS);
+        } else {
+            gpio_set_level(BLINK_GPIO, led_state);
+            led_state = !led_state;
+            vTaskDelay(1000 / portTICK_PERIOD_MS);
+        }
     }
 #endif
 }
