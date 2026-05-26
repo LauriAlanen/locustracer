@@ -1,15 +1,17 @@
 #!/bin/bash
 
-# start_servers.sh
-# A script to start all locustracer services together
+# start.sh
+# A hybrid script to run backend/frontend in Docker, and cpp_server natively.
 
 # Function to clean up background processes on exit
 cleanup() {
     echo ""
-    echo "Stopping all services..."
-    # Kill all child processes of this script
-    pkill -P $$
+    echo "Stopping cpp_server..."
+    pkill -f "locustracer_server" || true
     wait
+    echo "Stopping Node.js services..."
+    pkill -f "node server.js" || true
+    pkill -f "vite" || true
     echo "All services stopped."
     exit
 }
@@ -20,7 +22,21 @@ trap cleanup EXIT SIGINT SIGTERM
 # Ensure we are in the project root
 cd "$(dirname "$0")"
 
-echo "Building and starting cpp_server..."
+echo "Starting Backend natively..."
+(
+    cd application/monitor_app/backend
+    npm install --silent
+    npm start
+) &
+
+echo "Starting Frontend natively..."
+(
+    cd application/monitor_app/frontend
+    npm install --silent
+    npm run dev -- --host 0.0.0.0
+) &
+
+echo "Building and starting cpp_server natively..."
 (
     cd application/cpp_server
     cmake .
@@ -31,18 +47,6 @@ echo "Building and starting cpp_server..."
         echo "Failed to build cpp_server."
         exit 1
     fi
-) &
-
-echo "Starting Node.js Backend..."
-(
-    cd application/monitor_app/backend
-    npm start
-) &
-
-echo "Starting React Frontend (Port 5173)..."
-(
-    cd application/monitor_app/frontend
-    npm run dev -- --host
 ) &
 
 echo "All services started."

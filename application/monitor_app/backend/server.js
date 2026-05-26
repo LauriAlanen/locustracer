@@ -222,7 +222,7 @@ udpServer.on('listening', () => {
     console.log(`Node.js UDP server listening on ${address.address}:${address.port}`);
 });
 
-udpServer.bind(UDP_PORT, '127.0.0.1');
+udpServer.bind(UDP_PORT, '0.0.0.0');
 
 // ----------------------------------------------------
 // WebSocket Upgrade Handler (Routing)
@@ -354,7 +354,7 @@ wss.on('connection', (ws, request, type) => {
 // Broadcast UDP Audio to UI loops at ~60FPS
 setInterval(() => {
     if (uiConnections.size > 0) {
-        const payload = JSON.stringify(nodeData);
+        const payload = JSON.stringify({ audio: nodeData, tsfs: sysStats.latestTsfs });
         uiConnections.forEach(client => {
             if (client.readyState === 1) {
                 client.send(payload);

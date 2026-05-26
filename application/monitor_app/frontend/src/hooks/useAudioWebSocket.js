@@ -7,6 +7,7 @@ export function useAudioWebSocket(url = 'ws://127.0.0.1:8009/ui-ws') {
     // Store latest audio data outside of react state to prevent re-renders on every frame (30fps)
     // Components will use requestAnimationFrame to poll this ref
     const audioDataRef = useRef({});
+    const tsfDataRef = useRef({});
 
     const connect = useCallback(() => {
         if (wsRef.current?.readyState === WebSocket.OPEN) return;
@@ -27,7 +28,14 @@ export function useAudioWebSocket(url = 'ws://127.0.0.1:8009/ui-ws') {
         ws.onmessage = (event) => {
             try {
                 const payload = JSON.parse(event.data);
-                audioDataRef.current = payload;
+                if (payload.audio) {
+                    audioDataRef.current = payload.audio;
+                } else {
+                    audioDataRef.current = payload; // Fallback for old payloads
+                }
+                if (payload.tsfs) {
+                    tsfDataRef.current = payload.tsfs;
+                }
             } catch (e) {
                 console.error("Failed to parse WS message", e);
             }
@@ -79,5 +87,5 @@ export function useAudioWebSocket(url = 'ws://127.0.0.1:8009/ui-ws') {
         return false;
     }, []);
 
-    return { status, audioDataRef, sendBeep, sendVolume, sendIdentify };
+    return { status, audioDataRef, tsfDataRef, sendBeep, sendVolume, sendIdentify };
 }
