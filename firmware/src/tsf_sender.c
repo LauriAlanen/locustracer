@@ -79,6 +79,10 @@ void tsf_sender_init(void)
         NULL,
         configMAX_PRIORITIES - 1, // High priority
         NULL,
-        tskNO_AFFINITY // Let FreeRTOS decide
+#if defined(BOARD_LOLIN_S2_MINI)
+        tskNO_AFFINITY
+#else
+        1 // Pin to Core 1 (APP_CPU) on ESP32-S3
+#endif
     );
 }

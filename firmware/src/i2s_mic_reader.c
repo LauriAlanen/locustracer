@@ -120,7 +120,12 @@ void i2s_mic_reader_init(const i2s_mic_config_t *config) {
                                              NULL, 
                                              10,
                                              NULL, 
-                                             tskNO_AFFINITY);
+#if defined(BOARD_LOLIN_S2_MINI)
+                                             tskNO_AFFINITY
+#else
+                                             1
+#endif
+                                            );
 
     if (ret != pdPASS) {
         ESP_LOGE(TAG, "Failed to create microphone reader task");

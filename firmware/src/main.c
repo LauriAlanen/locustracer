@@ -74,7 +74,11 @@ void app_main(void)
 
     // Initialize API client and start task
     api_client_init();
+#if defined(BOARD_LOLIN_S2_MINI)
     xTaskCreate(api_client_task, "api_client_task", 8192, NULL, 5, NULL);
+#else
+    xTaskCreatePinnedToCore(api_client_task, "api_client_task", 8192, NULL, 5, NULL, 1);
+#endif
 
     // Start the heartbeat LED
     led_indicator_start();
