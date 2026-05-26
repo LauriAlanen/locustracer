@@ -1,25 +1,37 @@
-site_name: Locus Tracer Documentation
-site_description: Documentation for the Locus Tracer acoustic localization system.
-site_author: Locus Tracer Team
-
+site_name: Locustracer Docs
+site_description: Documentation for the Locustracer TDOA system
 theme:
   name: material
-  features:
-    - navigation.tabs
-    - navigation.sections
-    - toc.integrate
-    - search.suggest
-    - search.highlight
-    - content.code.copy
   palette:
-    - scheme: slate
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
       primary: indigo
-      accent: cyan
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+markdown_extensions:
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - attr_list
+  - md_in_html
 
 nav:
   - Home: index.md
-
-markdown_extensions:
-  - admonition
-  - pymdownx.details
-  - pymdownx.superfences
+  - Architecture: ARCHITECTURE.md
+  - API: API.md
+  - Firmware: ../firmware/README.md
+  - Agentic Workflow:
+    - Agents: ../AGENTS.md
+    - Skill: ../SKILL.md

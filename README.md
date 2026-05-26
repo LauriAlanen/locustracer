@@ -27,16 +27,6 @@ flowchart LR
     Listener2 == "UDP Packets<br/>Port 5006" ==> CPP
     CPP == "Forwarding<br/>Port 5008" ==> NodeJS
     NodeJS == "WebSockets<br/>& HTTP" ==> ReactUI
-    
-    classDef esp fill:#e3f2fd,stroke:#1565c0,stroke-width:2px;
-    classDef cpp fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
-    classDef node fill:#fff3e0,stroke:#ef6c00,stroke-width:2px;
-    classDef react fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px;
-    
-    class Master,Listener1,Listener2 esp;
-    class CPP cpp;
-    class NodeJS node;
-    class ReactUI react;
 ```
 
 - **Master/Listener ESP32 Nodes (`firmware/`)**: ESP32 microcontrollers that capture audio. A master node coordinates the synchronization via Wi-Fi Time Synchronization Function (TSF), while listener nodes transmit timestamped UDP audio packets.

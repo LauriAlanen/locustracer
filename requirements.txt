@@ -1,7 +1,1 @@
-platformio
-librosa
-numpy
-soundfile
-fastapi
-pydantic
-uvicorn
+mkdocs-material

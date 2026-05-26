@@ -19,4 +19,4 @@ jobs:
         uses: mhausenblas/mkdocs-deploy-gh-pages@1.26
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # REQUIREMENTS: "requirements.txt" # Uncomment this if your docs require extra python packages
+          REQUIREMENTS: "requirements.txt"
