@@ -49,6 +49,7 @@ bool UDPServer::start() {
 
     running_ = true;
     recv_thread_ = std::thread(&UDPServer::receiveLoop, this);
+    jb_thread_ = std::thread(&UDPServer::processAndForwardJitterBuffers, this);
 
     std::cout << "UDP Server listening on port " << port_ << std::endl;
     return true;
@@ -68,6 +69,9 @@ void UDPServer::stop() {
         }
         if (recv_thread_.joinable()) {
             recv_thread_.join();
+        }
+        if (jb_thread_.joinable()) {
+            jb_thread_.join();
         }
     }
 }
@@ -96,14 +100,38 @@ void UDPServer::receiveLoop() {
             // Pass to node manager
             node_manager_.processPacket(ip_address, packet, n);
 
-            // Forward to Python server (prepend IP)
-            if (forward_socket_fd_ >= 0) {
-                char forward_buf[2048];
-                std::memset(forward_buf, 0, 16);
-                std::strncpy(forward_buf, ip_address.c_str(), 15);
-                std::memcpy(forward_buf + 16, buffer, n);
-                sendto(forward_socket_fd_, forward_buf, 16 + n, 0,
-                       (struct sockaddr *)&forward_addr_, sizeof(forward_addr_));
+            // Push to JitterBuffer
+            {
+                std::lock_guard<std::mutex> lock(jb_mutex_);
+                jitter_buffers_[ip_address].push(*packet);
+            }
+        }
+    }
+}
+
+void UDPServer::processAndForwardJitterBuffers() {
+    while (running_) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));
+        
+        if (forward_socket_fd_ >= 0) {
+            std::lock_guard<std::mutex> lock(jb_mutex_);
+            for (auto& pair : jitter_buffers_) {
+                const std::string& ip_address = pair.first;
+                JitterBuffer& jb = pair.second;
+                
+                AudioPacket out_packet;
+                // Pop as many packets as are ready (to catch up if needed)
+                while (jb.pop(out_packet)) {
+                    char forward_buf[2048];
+                    std::memset(forward_buf, 0, 16);
+                    std::strncpy(forward_buf, ip_address.c_str(), 15);
+                    
+                    // We forward exactly one full packet size
+                    size_t packet_size = sizeof(AudioPacket);
+                    std::memcpy(forward_buf + 16, &out_packet, packet_size);
+                    sendto(forward_socket_fd_, forward_buf, 16 + packet_size, 0,
+                           (struct sockaddr *)&forward_addr_, sizeof(forward_addr_));
+                }
             }
         }
     }

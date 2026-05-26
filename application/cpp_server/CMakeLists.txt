@@ -15,6 +15,7 @@ set(SOURCES
     src/main.cpp
     src/UDPServer.cpp
     src/NodeManager.cpp
+    src/JitterBuffer.cpp
 )
 
 add_executable(locustracer_server ${SOURCES})

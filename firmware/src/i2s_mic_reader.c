@@ -30,13 +30,31 @@ static void i2s_mic_reader_task(void *pvParameters) {
         // Read raw data from I2S DMA buffer
         esp_err_t res = i2s_channel_read(rx_chan, raw_samples, alloc_bytes, &bytes_read, portMAX_DELAY);
         if (res == ESP_OK) {
-            // Get the TSF time immediately after the blocking read completes.
+            int samples_read = bytes_read / sizeof(int32_t);
+            
+            // Get the raw TSF time immediately after the blocking read completes.
             uint64_t current_tsf = esp_wifi_get_tsf_time(WIFI_IF_STA);
             
-            int samples_read = bytes_read / sizeof(int32_t);
+            // The ideal time advanced strictly by the number of samples at exactly 48000 Hz.
+            static uint64_t total_samples_read = 0;
+            static int64_t tsf_offset = 0;
+
+            uint64_t ideal_audio_time = (total_samples_read * 1000000ULL) / 48000ULL;
+            int64_t current_offset = (int64_t)current_tsf - (int64_t)ideal_audio_time;
+
+            if (total_samples_read == 0) {
+                tsf_offset = current_offset;
+            } else {
+                // Exponential Moving Average (Alpha = 1/64)
+                // This eliminates OS scheduling jitter but perfectly tracks crystal oscillator drift.
+                tsf_offset = tsf_offset + ((current_offset - tsf_offset) / 64);
+            }
+
+            uint64_t filtered_tsf = ideal_audio_time + tsf_offset;
+            total_samples_read += samples_read;
 
             // Send to Python Backend
-            audio_transmitter_send(raw_samples, samples_read, current_tsf);
+            audio_transmitter_send(raw_samples, samples_read, filtered_tsf);
 
             // Calculate a simple peak volume to verify data is arriving
             int32_t peak = 0;
@@ -56,7 +74,7 @@ static void i2s_mic_reader_task(void *pvParameters) {
 
             // Print the peak volume every ~1000ms
             if (++loop_counter >= 187) {
-                ESP_LOGI(TAG, "Audio Peak Vol: %ld | TSF: %llu", (long)peak, current_tsf);
+                ESP_LOGI(TAG, "Audio Peak Vol: %ld | TSF: %llu (Raw: %llu)", (long)peak, filtered_tsf, current_tsf);
                 loop_counter = 0;
             }
             

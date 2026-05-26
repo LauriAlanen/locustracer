@@ -7,6 +7,10 @@
 #include <string>
 #include <netinet/in.h>
 
+#include "JitterBuffer.h"
+#include <map>
+#include <mutex>
+
 class UDPServer {
 public:
     UDPServer(uint16_t port, NodeManager& node_manager);
@@ -20,6 +24,7 @@ public:
 
 private:
     void receiveLoop();
+    void processAndForwardJitterBuffers();
 
     uint16_t port_;
     int socket_fd_;
@@ -27,8 +32,12 @@ private:
     struct sockaddr_in forward_addr_;
     NodeManager& node_manager_;
 
+    std::map<std::string, JitterBuffer> jitter_buffers_;
+    std::mutex jb_mutex_;
+
     std::atomic<bool> running_;
     std::thread recv_thread_;
+    std::thread jb_thread_;
 };
 
 #endif // UDPSERVER_H

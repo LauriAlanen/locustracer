@@ -181,15 +181,29 @@ udpServer.on('message', (msg, rinfo) => {
     const seqId = msg.readUInt32LE(16);
     const tsfTime = msg.readBigUInt64LE(20);
 
-    // Calculate actual hardware drift by finding the offset against the local high-res server time
-    const serverTimeUs = Number(process.hrtime.bigint() / 1000n);
-    const offset = Number(tsfTime) - serverTimeUs;
+    // Calculate true TSF timer stability (drift) against the ideal I2S sample clock
+    if (!sysStats.lastRawTsfs) sysStats.lastRawTsfs = {};
+    if (!sysStats.lastRawSeqs) sysStats.lastRawSeqs = {};
 
-    if (sysStats.latestTsfs[ip] === undefined) {
-        sysStats.latestTsfs[ip] = offset;
+    if (sysStats.latestTsfs[ip] === undefined || sysStats.lastRawTsfs[ip] === undefined) {
+        sysStats.latestTsfs[ip] = 0; // Cumulative drift baseline
+        sysStats.lastRawTsfs[ip] = Number(tsfTime);
+        sysStats.lastRawSeqs[ip] = seqId;
     } else {
-        // Use an Exponential Moving Average (EMA) to completely smooth out Wi-Fi transmission jitter
-        sysStats.latestTsfs[ip] = (sysStats.latestTsfs[ip] * 0.95) + (offset * 0.05);
+        const seqDiff = seqId - sysStats.lastRawSeqs[ip];
+        if (seqDiff > 0 && seqDiff < 1000) {
+            // 256 samples @ 48000Hz = 5333.333... microseconds
+            const expectedTimeElapsed = seqDiff * (256 * 1000000 / 48000);
+            const actualTimeElapsed = Number(tsfTime) - sysStats.lastRawTsfs[ip];
+            
+            // The difference between actual TSF elapsed and expected ideal time elapsed
+            const driftDelta = actualTimeElapsed - expectedTimeElapsed;
+            
+            // Accumulate the drift
+            sysStats.latestTsfs[ip] += driftDelta;
+        }
+        sysStats.lastRawTsfs[ip] = Number(tsfTime);
+        sysStats.lastRawSeqs[ip] = seqId;
     }
 
     if (sysStats.lastSeqIds[ip] !== undefined) {
