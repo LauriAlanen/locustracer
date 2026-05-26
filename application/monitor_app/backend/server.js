@@ -41,6 +41,7 @@ const sysStats = {
     packetsLostSinceLastCheck: 0,
     lastSeqIds: {},
     latestTsfs: {},
+    maxJitterSinceLastCheck: 0,
     activeNodes: new Set()
 };
 
@@ -94,14 +95,7 @@ app.get('/telemetry', (req, res) => {
 setInterval(() => {
     const mbps = (sysStats.bytesSinceLastCheck * 8) / 1000000;
     
-    let minOffset = null;
-    let maxOffset = null;
-    for (const ip in sysStats.latestTsfs) {
-        const offset = sysStats.latestTsfs[ip];
-        if (minOffset === null || offset < minOffset) minOffset = offset;
-        if (maxOffset === null || offset > maxOffset) maxOffset = offset;
-    }
-    const variance = (minOffset !== null && maxOffset !== null) ? Math.round(Math.abs(maxOffset - minOffset)) : 0;
+    const variance = Math.round(sysStats.maxJitterSinceLastCheck);
 
     latestTelemetry.system = {
         tsf_variance_us: variance,
@@ -112,6 +106,7 @@ setInterval(() => {
 
     sysStats.bytesSinceLastCheck = 0;
     sysStats.packetsLostSinceLastCheck = 0;
+    sysStats.maxJitterSinceLastCheck = 0;
     sysStats.activeNodes.clear(); // Reset to only count actively streaming nodes
 }, 1000);
 
@@ -199,8 +194,14 @@ udpServer.on('message', (msg, rinfo) => {
             // The difference between actual TSF elapsed and expected ideal time elapsed
             const driftDelta = actualTimeElapsed - expectedTimeElapsed;
             
-            // Accumulate the drift
+            // Accumulate the drift for the Jitter Chart
             sysStats.latestTsfs[ip] += driftDelta;
+            
+            // Track instantaneous jitter (max deviation per packet) for the UI variance metric
+            const absJitter = Math.abs(driftDelta);
+            if (absJitter > sysStats.maxJitterSinceLastCheck) {
+                sysStats.maxJitterSinceLastCheck = absJitter;
+            }
         }
         sysStats.lastRawTsfs[ip] = Number(tsfTime);
         sysStats.lastRawSeqs[ip] = seqId;
