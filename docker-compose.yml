@@ -1,0 +1,15 @@
+
+services:
+  locustracer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: locustracer_stack
+    # Use host networking so the container shares the host's IP address (e.g. 192.168.3.65)
+    # This allows the backend to see the real IP (192.168.3.x) of the nodes.
+    # Note for Mac users: You must enable "Host Networking" in Docker Desktop settings
+    # or rely on port mapping. Since Docker 4.31, host networking is supported on Mac.
+    network_mode: "host"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped

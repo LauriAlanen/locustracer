@@ -35,6 +35,41 @@ flowchart LR
 
 For a comprehensive view of the system design, please see the [Architecture Overview](docs/ARCHITECTURE.md) and [API Documentation](docs/API.md). Hardware specifics and firmware configuration can be found in the [Firmware Directory](firmware/).
 
+## Running the System
+
+You can run the Locustracer software stack (C++ server, Node.js backend, and React frontend) either natively or via Docker.
+
+### Running Natively
+
+To start the system natively, run:
+
+```bash
+./locustracer.sh start
+```
+
+### Running via Docker
+
+To start the system using Docker, run:
+
+```bash
+./locustracer.sh start --docker
+```
+
+### Stopping the System
+
+To cleanly stop all running processes and Docker containers, run:
+
+```bash
+./locustracer.sh stop
+```
+
+This will run the `cpp_server`, Node.js backend, and frontend inside a single Docker container. The container is configured to use `network_mode: "host"`.
+
+> [!IMPORTANT]
+> **Note for Mac Users:** Because the Docker container relies on host networking (to ensure that the node IP addresses are correctly visible in the UI), Mac users **MUST** enable "Host Networking" in their Docker Desktop settings. This feature is supported in Docker Desktop version 4.31 and later. If you cannot enable this, you may need to stick to native execution.
+>
+> Linux and Windows (via WSL2 mirrored networking mode) support this out-of-the-box.
+
 ## Agentic Workflow
 
 This project is actively maintained and evolved using an Agentic Workflow. Development tasks are delegated to specialized AI subagents, ensuring modularity, code quality, and accurate documentation.

@@ -1,0 +1,7 @@
+**/node_modules/
+**/build/
+**/CMakeCache.txt
+**/CMakeFiles/
+**/cmake_install.cmake
+**/Makefile
+**/locustracer_server
