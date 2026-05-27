@@ -216,10 +216,14 @@ marimo/_lsp/
 __marimo__/
 
 # Streamlit
-.streamlit/secrets.tomlapplication/cpp_server/CMakeCache.txt
-application/cpp_server/CMakeFiles/
-application/cpp_server/Makefile
-application/cpp_server/locustracer_server
+.streamlit/secrets.toml
+
+# CMake Build files
+**/CMakeCache.txt
+**/CMakeFiles/
+**/Makefile
+**/cmake_install.cmake
+**/locustracer_server
 
 # Node.js / React / Web
 node_modules/
