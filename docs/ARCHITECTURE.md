@@ -89,3 +89,9 @@ sequenceDiagram
         Node->>UI: WS Broadcast (Audio Arrays & TSF Variance)
     end
 ```
+
+## Resilience Mechanisms
+To ensure stability under high loads and network jitter, several resilience mechanisms are implemented:
+- **UDP Server Non-Blocking Forwarding (`UDPServer.cpp`)**: The packet forwarding (`sendto`) is decoupled from the `JitterBuffer` synchronization lock (`jb_mutex_`) using a local vector. This prevents network backpressure or slow socket sends from blocking the high-frequency receive loop.
+- **Jitter Buffer Auto-Recovery (`JitterBuffer.cpp`)**: Includes sequence reset detection to handle node restarts or massive packet losses. Additionally, silence packet generation is capped to prevent infinite loops when realigning streams.
+- **I2S DMA Overflow Detection (`i2s_mic_reader.c`)**: The firmware continuously monitors the TSF offset. If it slips by more than 5ms, the system detects a DMA overflow and snaps the sample counter back to reality, preventing long-term skewing of the Exponential Moving Average (EMA) used for TSF smoothing.

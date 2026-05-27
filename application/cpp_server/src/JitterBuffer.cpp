@@ -16,6 +16,13 @@ void JitterBuffer::push(const AudioPacket& packet) {
         next_play_seq_ = packet.sequence_id;
     }
     
+    // Check for huge sequence jumps (reboot or massive packet loss)
+    int64_t diff = (int64_t)packet.sequence_id - (int64_t)next_play_seq_;
+    if (diff > 1000 || diff < -1000) {
+        reset();
+        next_play_seq_ = packet.sequence_id;
+    }
+    
     // Drop strictly old packets if we're past them
     if (!buffering_ && packet.sequence_id < next_play_seq_) {
         // Late packet, drop it.
@@ -58,7 +65,21 @@ bool JitterBuffer::pop(AudioPacket& out_packet) {
         return true;
     }
     
-    // Packet is missing. We must inject silence to maintain perfect time alignment.
+    // Packet is missing. 
+    // BUT if the next available packet is too far away, we should snap to it to avoid an infinite loop of silence generation.
+    if (!buffer_.empty()) {
+        auto first_avail = buffer_.begin();
+        if ((int64_t)first_avail->first - (int64_t)next_play_seq_ > 50) {
+            // Snap to the new sequence
+            next_play_seq_ = first_avail->first;
+            out_packet = first_avail->second;
+            buffer_.erase(first_avail);
+            next_play_seq_++;
+            return true; // We popped a real packet instead of silence
+        }
+    }
+    
+    // We must inject silence to maintain perfect time alignment.
     // Let's create a dummy packet.
     out_packet.sequence_id = next_play_seq_;
     

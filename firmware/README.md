@@ -23,6 +23,7 @@ The firmware operates on a multi-tasking architecture leveraging FreeRTOS to ens
 1. **`i2s_mic_reader_task`**: (Priority 10)
    - Reads 256 samples from the I2S DMA buffer.
    - Grabs the raw WiFi TSF time and applies an Exponential Moving Average filter to smooth OS jitter while tracking crystal oscillator drift.
+   - Incorporates resilience logic: detects I2S DMA overflows (e.g., when the TSF offset slips > 5ms) and snaps the sample counter to reality to prevent EMA skewing.
    - Pushes the audio frame to the transmitter.
 
 2. **`audio_transmitter_task`**:

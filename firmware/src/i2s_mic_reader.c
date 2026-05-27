@@ -45,6 +45,21 @@ static void i2s_mic_reader_task(void *pvParameters) {
             if (total_samples_read == 0) {
                 tsf_offset = current_offset;
             } else {
+                // Check if there was a massive slip (e.g. DMA dropped samples)
+                int64_t offset_diff = current_offset - tsf_offset;
+                if (offset_diff > 5000 || offset_diff < -5000) {
+                    // Offset slipped by > 5ms. We probably dropped samples.
+                    // Instead of letting EMA skew, we snap the total_samples_read to reality.
+                    
+                    // We want ideal_audio_time to be roughly current_tsf - tsf_offset
+                    uint64_t new_ideal_audio_time = current_tsf - tsf_offset;
+                    total_samples_read = (new_ideal_audio_time * 48000ULL) / 1000000ULL;
+                    
+                    // Recompute current_offset with the snapped samples
+                    ideal_audio_time = (total_samples_read * 1000000ULL) / 48000ULL;
+                    current_offset = (int64_t)current_tsf - (int64_t)ideal_audio_time;
+                }
+
                 // Exponential Moving Average (Alpha = 1/64)
                 // This eliminates OS scheduling jitter but perfectly tracks crystal oscillator drift.
                 tsf_offset = tsf_offset + ((current_offset - tsf_offset) / 64);
