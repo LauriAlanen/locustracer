@@ -18,7 +18,7 @@ struct NodeConfig {
 
 class PositionSolver : public IPipelineStage {
 public:
-    PositionSolver(const std::vector<NodeConfig>& nodes, double speed_of_sound = 343.0);
+    PositionSolver(const std::vector<NodeConfig>& nodes, double speed_of_sound = 343.0, const std::string& ref_node_ip = "");
     ~PositionSolver();
 
     bool process(PipelineContext& context) override;

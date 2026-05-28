@@ -6,6 +6,7 @@ AudioSynchronizer::AudioSynchronizer(size_t frame_size, uint32_t sample_rate)
 }
 
 void AudioSynchronizer::setPipelineStages(std::vector<std::shared_ptr<IPipelineStage>> stages) {
+    std::lock_guard<std::mutex> lock(pipeline_mutex_);
     pipeline_stages_ = std::move(stages);
 }
 
@@ -95,10 +96,13 @@ void AudioSynchronizer::tryEmitFrame() {
 
         // Execute pipeline
         bool abort = false;
-        for (auto& stage : pipeline_stages_) {
-            if (!stage->process(context)) {
-                abort = true;
-                break;
+        {
+            std::lock_guard<std::mutex> lock(pipeline_mutex_);
+            for (auto& stage : pipeline_stages_) {
+                if (!stage->process(context)) {
+                    abort = true;
+                    break;
+                }
             }
         }
     }

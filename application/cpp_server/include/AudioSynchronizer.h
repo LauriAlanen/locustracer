@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <map>
 #include <memory>
+#include <mutex>
 
 class AudioSynchronizer {
 public:
@@ -23,6 +24,7 @@ private:
     size_t frame_size_;
     uint32_t sample_rate_;
 
+    std::mutex pipeline_mutex_;
     std::vector<std::shared_ptr<IPipelineStage>> pipeline_stages_;
 
     struct NodeBuffer {

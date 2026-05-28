@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <cstring>
 
-PositionSolver::PositionSolver(const std::vector<NodeConfig>& nodes, double speed_of_sound)
+PositionSolver::PositionSolver(const std::vector<NodeConfig>& nodes, double speed_of_sound, const std::string& ref_node_ip)
     : speed_of_sound_(speed_of_sound),
       min_x_(std::numeric_limits<double>::max()), max_x_(std::numeric_limits<double>::lowest()),
       min_y_(std::numeric_limits<double>::max()), max_y_(std::numeric_limits<double>::lowest()),
@@ -17,7 +17,9 @@ PositionSolver::PositionSolver(const std::vector<NodeConfig>& nodes, double spee
         min_y_ = std::min(min_y_, n.y);
         max_y_ = std::max(max_y_, n.y);
     }
-    if (!nodes.empty()) {
+    if (!ref_node_ip.empty()) {
+        ref_node_ip_ = ref_node_ip;
+    } else if (!nodes.empty()) {
         ref_node_ip_ = nodes.front().ip_address;
     }
 
