@@ -89,3 +89,33 @@ sequenceDiagram
         Node->>UI: WS Broadcast (Audio Arrays & TSF Variance)
     end
 ```
+
+## 3D Room Visualization and Spatial Mapping
+
+To enable accurate monitoring and intuitive debugging of real-time acoustic events, the frontend includes a high-fidelity visualizer that models the physical deployment environment.
+
+### Key Components
+
+- **Vaasa Wapice HQ (Alfa Room) Modeling**
+  The visualizer represents the actual physical **Alfa Room** at Vaasa Wapice HQ, which has dimensions of **4.0m × 3.5m × 3.4m**.
+  
+- **High-Fidelity 3D Environment**
+  Built using **React Three Fiber** and **Three.js**, the 3D environment features:
+  - Exact scale-modeled boundaries (walls, floor, and ceiling).
+  - Frosted glass windows and standard ceiling T-grids at **2.70m**.
+  - Scale models of physical room furniture (such as a conference table and a chest of drawers) to maintain precise contextual reference.
+
+- **Physical Boundary Node Mapping**
+  Instead of utilizing abstract circular patterns, the listener and master nodes are mapped directly along the physical boundaries (walls) of the modeled room. This arrangement perfectly mirrors their actual deployment coordinates inside the physical lab.
+
+- **Constrained Sound Source Localization**
+  Dynamic, real-time localized sound source estimation is strictly constrained to the physical boundaries of the room. When a sound source is localized:
+  - It casts dynamic 3D point lights in the environment.
+  - Standard error and Time Difference of Arrival (TDOA) signal weight lines are dynamically rendered, linking the sound source directly to the active listening nodes.
+
+- **Interactive UI Controls**
+  Users can customize their view in real-time using simple dashboard toggles:
+  - **Axes Indicators**: Show or hide 3D spatial coordinate axes helper (X, Y, Z).
+  - **Floor Grids**: Toggle floor grid overlays for precise spatial estimation.
+  - **Room Info**: Toggle context overlays showing physical room metrics and active system configurations.
+
