@@ -54,6 +54,41 @@ This document describes the REST endpoints and WebSocket payloads used by the Lo
   }
   ```
 
+### `GET /nodes/config`
+**Description**: Retrieves the current physical configuration of the microphone nodes.
+- **Response**:
+  ```json
+  {
+    "nodes": [
+      { "ip": "192.168.3.14", "x": 0.0, "y": 0.0 }
+    ]
+  }
+  ```
+
+### `POST /nodes/config`
+**Description**: Updates the microphone positions dynamically. The payload should contain the list of nodes and an optional `reference_node` string which defines the origin node for TDOA cross-correlation. If `reference_node` is omitted, the first node in the array is used as the reference. Forwards to C++ server via UDP (port 5011).
+- **Request Body**:
+  ```json
+  {
+    "reference_node": "192.168.3.10",
+    "nodes": [
+      { "ip": "192.168.3.10", "x": 0.0, "y": 0.0 },
+      { "ip": "192.168.3.15", "x": 1.5, "y": 0.0 }
+    ]
+  }
+  ```
+- **Response**: `{"status": "success", "current_config": { ... }}`
+
+### `GET /position`
+**Description**: Retrieves the real-time calculated X, Y position of the acoustic source from the TDOA pipeline.
+- **Response**:
+  ```json
+  {
+    "x": 1.05,
+    "y": 0.82
+  }
+  ```
+
 ## WebSocket Payloads
 
 ### 1. ESP32 -> Node.js (`ws://.../ws`)
@@ -124,3 +159,5 @@ Used to send commands from the UI to the nodes.
   "node_id": "192.168.1.11"
 }
 ```
+
+
