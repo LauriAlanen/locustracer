@@ -153,6 +153,29 @@ app.post('/config', (req, res) => {
     res.json({ status: 'success', node_id: nodeId, new_config: storedConfig });
 });
 
+let currentNodesConfig = { nodes: [] };
+
+app.get('/nodes/config', (req, res) => {
+    res.json(currentNodesConfig);
+});
+
+app.post('/nodes/config', (req, res) => {
+    const data = req.body;
+    if (!data || !Array.isArray(data.nodes)) {
+        return res.status(400).json({ error: "Invalid payload, expected { nodes: [...] }" });
+    }
+    
+    currentNodesConfig = data;
+    
+    const message = Buffer.from(JSON.stringify(data));
+    const client = dgram.createSocket('udp4');
+    client.send(message, 5011, '127.0.0.1', (err) => {
+        if (err) console.error("Failed to forward nodes config to C++ server:", err);
+        client.close();
+    });
+
+    res.json({ status: 'success', current_config: currentNodesConfig });
+});
 
 // ----------------------------------------------------
 // UDP Listener (Receives from cpp_server on 5008)
