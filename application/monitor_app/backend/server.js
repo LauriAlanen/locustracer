@@ -349,7 +349,7 @@ wss.on('connection', (ws, request, type) => {
                 }
                 
                 if (telemetry.temperature !== undefined || telemetry.cpu_temp !== undefined) {
-                    console.log(`==== Received WS ${nodeType} Telemetry from ${nodeId} ====`);
+                    // console.log(`==== Received WS ${nodeType} Telemetry from ${nodeId} ====`);
                     latestTelemetry[nodeType][nodeId] = telemetry;
                 }
             } catch (error) {
