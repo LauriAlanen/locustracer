@@ -12,4 +12,5 @@ services:
     network_mode: "host"
     environment:
       - NODE_ENV=production
+      - NO_FRONTEND=${NO_FRONTEND:-false}
     restart: unless-stopped

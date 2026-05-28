@@ -22,6 +22,8 @@ print_usage() {
     echo "  start               Start the system natively."
     echo "  start --docker      Start the system using Docker Compose."
     echo "  start --container   (Internal use) Start the system inside the Docker container."
+    echo "  start --no-frontend Start the system natively without the frontend."
+    echo "  start --only-frontend Start only the frontend natively."
     echo "  stop                Stop all native processes and Docker containers."
     echo ""
 }
@@ -32,7 +34,19 @@ if [ -z "$1" ]; then
 fi
 
 COMMAND="$1"
-OPTION="$2"
+shift
+
+DOCKER_MODE=0
+CONTAINER_MODE=0
+NO_FRONTEND_FLAG=0
+ONLY_FRONTEND_FLAG=0
+
+for arg in "$@"; do
+    if [ "$arg" == "--docker" ]; then DOCKER_MODE=1; fi
+    if [ "$arg" == "--container" ]; then CONTAINER_MODE=1; fi
+    if [ "$arg" == "--no-frontend" ]; then NO_FRONTEND_FLAG=1; fi
+    if [ "$arg" == "--only-frontend" ]; then ONLY_FRONTEND_FLAG=1; fi
+done
 
 # Function to clean up background processes on exit
 cleanup() {
@@ -54,11 +68,14 @@ if [ "$COMMAND" == "stop" ]; then
 fi
 
 if [ "$COMMAND" == "start" ]; then
-    if [ "$OPTION" == "--docker" ]; then
+    if [ "$DOCKER_MODE" == "1" ]; then
         echo "Starting via Docker Compose..."
         if [ -z "$DOCKER_COMPOSE" ]; then
             echo "Error: Neither 'docker compose' nor 'docker-compose' command found."
             exit 1
+        fi
+        if [ "$NO_FRONTEND_FLAG" == "1" ]; then
+            export NO_FRONTEND=true
         fi
         $DOCKER_COMPOSE up --build
         exit 0
@@ -67,38 +84,46 @@ if [ "$COMMAND" == "start" ]; then
     # Register the cleanup function for EXIT, SIGINT, SIGTERM
     trap cleanup EXIT SIGINT SIGTERM
 
-    echo "Starting Backend..."
-    (
-        cd application/monitor_app/backend
-        if [ "$OPTION" != "--container" ]; then
-            npm install --silent
-        fi
-        npm start
-    ) &
+    if [ "$ONLY_FRONTEND_FLAG" != "1" ]; then
+        echo "Starting Backend..."
+        (
+            cd application/monitor_app/backend
+            if [ "$CONTAINER_MODE" != "1" ]; then
+                npm install --silent
+            fi
+            npm start
+        ) &
+    fi
 
-    echo "Starting Frontend..."
-    (
-        cd application/monitor_app/frontend
-        if [ "$OPTION" != "--container" ]; then
-            npm install --silent
-        fi
-        NODE_ENV=development npm run dev -- --host 0.0.0.0
-    ) &
+    if [ "$NO_FRONTEND_FLAG" != "1" ] && [ "$NO_FRONTEND" != "true" ]; then
+        echo "Starting Frontend..."
+        (
+            cd application/monitor_app/frontend
+            if [ "$CONTAINER_MODE" != "1" ]; then
+                npm install --silent
+            fi
+            NODE_ENV=development npm run dev -- --host 0.0.0.0
+        ) &
+    else
+        echo "Skipping Frontend..."
+    fi
 
-    echo "Starting cpp_server..."
-    (
-        cd application/cpp_server
-        if [ "$OPTION" != "--container" ]; then
-            cmake .
-            make
-        fi
-        if [ -f "locustracer_server" ]; then
-            ./locustracer_server
-        else
-            echo "Failed to build cpp_server."
-            exit 1
-        fi
-    ) &
+    if [ "$ONLY_FRONTEND_FLAG" != "1" ]; then
+        echo "Starting cpp_server..."
+        (
+            cd application/cpp_server
+            if [ "$CONTAINER_MODE" != "1" ]; then
+                cmake .
+                make
+            fi
+            if [ -f "locustracer_server" ]; then
+                ./locustracer_server
+            else
+                echo "Failed to build cpp_server."
+                exit 1
+            fi
+        ) &
+    fi
 
     echo "All services started."
     echo "Press Ctrl+C to stop all services, or run './locustracer.sh stop' in another terminal."
