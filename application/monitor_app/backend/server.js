@@ -425,7 +425,7 @@ wss.on('connection', (ws, request, type) => {
 // Broadcast UDP Audio to UI loops at ~60FPS
 setInterval(() => {
     if (uiConnections.size > 0) {
-        const payload = JSON.stringify({ audio: nodeData, tsfs: sysStats.latestTsfs });
+        const payload = JSON.stringify({ audio: nodeData, tsfs: sysStats.latestTsfs, position: latestPosition });
         uiConnections.forEach(client => {
             if (client.readyState === 1) {
                 client.send(payload);

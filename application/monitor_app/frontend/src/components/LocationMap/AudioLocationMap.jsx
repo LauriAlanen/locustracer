@@ -4,6 +4,60 @@ import { Edges } from '@react-three/drei';
 import { OrbitControls, Html, Stars, Sphere, Line, MeshWobbleMaterial, Text, Box } from '@react-three/drei';
 import * as THREE from 'three';
 
+// Convert API corner coords (origin at corner, 0–4m x, 0–3.5m y) to 3D world coords (origin at center)
+const cornerToWorld = (cx, cy) => [cx - 2.0, 0, cy - 1.75];
+
+// The 4 physical room corners (matches NodePositionEditor)
+const ROOM_CORNERS = [
+    { id: 'top-left', label: 'Top Left', x: 0.0, y: 0.0 },
+    { id: 'top-right', label: 'Top Right', x: 4.0, y: 0.0 },
+    { id: 'bottom-left', label: 'Bottom Left', x: 0.0, y: 3.5 },
+    { id: 'bottom-right', label: 'Bottom Right', x: 4.0, y: 3.5 },
+];
+
+function CornerLabel({ position, label, ip, isReference }) {
+    const worldPos = cornerToWorld(position.x, position.y);
+    return (
+        <group position={[worldPos[0], 0.15, worldPos[2]]}>
+            {/* Corner pillar */}
+            <mesh>
+                <cylinderGeometry args={[0.04, 0.04, 0.3, 8]} />
+                <meshStandardMaterial
+                    color={isReference ? '#ffd700' : '#00f0ff'}
+                    emissive={isReference ? '#ffd700' : '#00f0ff'}
+                    emissiveIntensity={0.6}
+                />
+            </mesh>
+            {/* Corner name */}
+            <Text
+                position={[0, 0.35, 0]}
+                fontSize={0.18}
+                color={isReference ? '#ffd700' : '#00d4ff'}
+                anchorX="center"
+                anchorY="bottom"
+                outlineWidth={0.012}
+                outlineColor="#000000"
+            >
+                {label}{isReference ? ' ⭐' : ''}
+            </Text>
+            {/* IP address */}
+            {ip && (
+                <Text
+                    position={[0, 0.18, 0]}
+                    fontSize={0.11}
+                    color="rgba(255,255,255,0.7)"
+                    anchorX="center"
+                    anchorY="bottom"
+                    outlineWidth={0.008}
+                    outlineColor="#000000"
+                >
+                    {ip}
+                </Text>
+            )}
+        </group>
+    );
+}
+
 const SMOOTHING = 0.85;
 
 function AudioNode({ id, position, type, audioDataRef, smoothedRmsRef, currentRms }) {
@@ -46,11 +100,6 @@ function AudioNode({ id, position, type, audioDataRef, smoothedRmsRef, currentRm
             <Box args={[0.2, 0.05, 0.2]} position={[0, 0.025, 0]}>
                 <meshStandardMaterial color="#333" metalness={0.8} roughness={0.2} />
             </Box>
-
-            {/* Outline/Glow Ring */}
-            <Sphere args={[0.25, 16, 16]} position={[0, 0.86, 0]}>
-                <meshBasicMaterial color={color} transparent opacity={0.15} wireframe />
-            </Sphere>
 
             <Html position={[0, 1.2, 0]} center style={{ pointerEvents: 'none' }}>
                 <div style={{
@@ -509,7 +558,7 @@ function ConferenceTable() {
     );
 }
 
-function Scene({ telemetryData, audioDataRef, masterNodeId, showAxes, showGrid, showInfo }) {
+function Scene({ telemetryData, audioDataRef, positionDataRef, masterNodeId, showAxes, showGrid, showInfo, nodeConfig }) {
     const smoothedRmsRef = useRef({});
     const [currentRms, setCurrentRms] = useState({});
     const [sourceTarget, setSourceTarget] = useState([0, 0.2, 0]);
@@ -521,9 +570,26 @@ function Scene({ telemetryData, audioDataRef, masterNodeId, showAxes, showGrid, 
 
         const nodes = [];
 
-        // Slightly inset from walls
-        const w = 4.0 - 0.4; // 3.6
-        const d = 3.5 - 0.4; // 3.1
+        // If we have corner config from NodePositionEditor, use those real positions
+        if (nodeConfig && nodeConfig.length > 0) {
+            const allKnownIds = [
+                ...Object.keys(telemetryData.master || {}),
+                ...Object.keys(telemetryData.listener || {}),
+                ...Object.keys(telemetryData.unknown || {}),
+            ];
+            nodeConfig.forEach(({ ip, x, y }) => {
+                if (!allKnownIds.includes(ip)) return;
+                const type = telemetryData.master?.[ip] ? 'master'
+                    : telemetryData.listener?.[ip] ? 'listener' : 'unknown';
+                // Convert from API coords (corner origin) to 3D world coords (center origin)
+                nodes.push({ id: ip, type, position: [x - 2.0, 0, y - 1.75] });
+            });
+            return { nodes };
+        }
+
+        // Fallback: arrange nodes around the room perimeter
+        const w = 4.0 - 0.4;
+        const d = 3.5 - 0.4;
         const perimeter = 2 * w + 2 * d;
 
         if (masterNodeId) {
@@ -539,33 +605,16 @@ function Scene({ telemetryData, audioDataRef, masterNodeId, showAxes, showGrid, 
             let p = t * perimeter;
             let x = 0, z = 0;
 
-            if (p < w) {
-                // Bottom edge
-                x = -w / 2 + p;
-                z = d / 2;
-            } else if (p < w + d) {
-                // Right edge
-                x = w / 2;
-                z = d / 2 - (p - w);
-            } else if (p < w + d + w) {
-                // Top edge
-                x = w / 2 - (p - (w + d));
-                z = -d / 2;
-            } else {
-                // Left edge
-                x = -w / 2;
-                z = -d / 2 + (p - (w + d + w));
-            }
+            if (p < w) { x = -w / 2 + p; z = d / 2; }
+            else if (p < w + d) { x = w / 2; z = d / 2 - (p - w); }
+            else if (p < w + d + w) { x = w / 2 - (p - (w + d)); z = -d / 2; }
+            else { x = -w / 2; z = -d / 2 + (p - (w + d + w)); }
 
-            nodes.push({
-                id: node.id,
-                type: node.type,
-                position: [x, 0, z]
-            });
+            nodes.push({ id: node.id, type: node.type, position: [x, 0, z] });
         });
 
         return { nodes };
-    }, [telemetryData, masterNodeId]);
+    }, [telemetryData, masterNodeId, nodeConfig]);
 
     useFrame(() => {
         const audioData = audioDataRef.current || {};
@@ -615,10 +664,22 @@ function Scene({ telemetryData, audioDataRef, masterNodeId, showAxes, showGrid, 
         setCurrentRms(newCurrentRms);
 
         if (totalWeight > 0.001) {
-            let sourceX = totalWeightedX / totalWeight;
-            let sourceZ = totalWeightedZ / totalWeight;
+            let sourceX, sourceZ;
 
-            // Constrain source target to room boundaries
+            // Prefer true TDOA position from backend if available
+            if (positionDataRef && positionDataRef.current && positionDataRef.current.x !== null && positionDataRef.current.y !== null) {
+                // TDOA API coords: origin at reference corner (0–4m x, 0–3.5m y)
+                // 3D world coords: origin at room center (-2–+2m x, -1.75–+1.75m z)
+                // Offset: subtract half room dimensions to convert
+                sourceX = positionDataRef.current.x - 2.0;
+                sourceZ = positionDataRef.current.y - 1.75; // TDOA Y → 3D Z
+            } else {
+                // Fallback: RMS-weighted average across nodes
+                sourceX = totalWeightedX / totalWeight;
+                sourceZ = totalWeightedZ / totalWeight;
+            }
+
+            // Constrain to room boundaries
             sourceX = Math.max(-2.0, Math.min(2.0, sourceX));
             sourceZ = Math.max(-1.75, Math.min(1.75, sourceZ));
 
@@ -631,6 +692,19 @@ function Scene({ telemetryData, audioDataRef, masterNodeId, showAxes, showGrid, 
         }
     });
 
+    // Build corner labels from nodeConfig
+    const cornerLabels = useMemo(() => {
+        return ROOM_CORNERS.map(corner => {
+            const assigned = nodeConfig?.find(n => {
+                // Find which nodeConfig entry corresponds to this corner by coordinates
+                return Math.abs(n.x - corner.x) < 0.1 && Math.abs(n.y - corner.y) < 0.1;
+            });
+            return { ...corner, ip: assigned?.ip || null };
+        });
+    }, [nodeConfig]);
+
+    const referenceIp = nodeConfig?.find(n => n.isReference)?.ip || null;
+
     return (
         <>
             <ambientLight intensity={0.5} />
@@ -640,6 +714,17 @@ function Scene({ telemetryData, audioDataRef, masterNodeId, showAxes, showGrid, 
             <SimsRoom showAxes={showAxes} showGrid={showGrid} showInfo={showInfo} />
             <ConferenceTable />
             <ChestOfDrawers />
+
+            {/* Corner labels in 3D world */}
+            {cornerLabels.map(corner => (
+                <CornerLabel
+                    key={corner.id}
+                    position={corner}
+                    label={corner.label}
+                    ip={corner.ip}
+                    isReference={corner.ip !== null && corner.ip === referenceIp}
+                />
+            ))}
 
             {nodeLayout.nodes.map(node => (
                 <AudioNode
@@ -673,7 +758,7 @@ function Scene({ telemetryData, audioDataRef, masterNodeId, showAxes, showGrid, 
     );
 }
 
-export function AudioLocationMap({ telemetryData, audioDataRef, masterNodeId, showAxes, showGrid, showInfo }) {
+export function AudioLocationMap({ telemetryData, audioDataRef, positionDataRef, masterNodeId, showAxes, showGrid, showInfo, nodeConfig }) {
     return (
         <div className="audio-map-wrapper">
             <Canvas camera={{ position: [0, 5, 6], fov: 50 }} shadows>
@@ -681,10 +766,12 @@ export function AudioLocationMap({ telemetryData, audioDataRef, masterNodeId, sh
                 <Scene
                     telemetryData={telemetryData}
                     audioDataRef={audioDataRef}
+                    positionDataRef={positionDataRef}
                     masterNodeId={masterNodeId}
                     showAxes={showAxes}
                     showGrid={showGrid}
                     showInfo={showInfo}
+                    nodeConfig={nodeConfig}
                 />
             </Canvas>
         </div>

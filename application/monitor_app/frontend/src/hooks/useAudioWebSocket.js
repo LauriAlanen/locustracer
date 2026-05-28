@@ -10,6 +10,7 @@ export function useAudioWebSocket(url = DEFAULT_WS_URL) {
     // Components will use requestAnimationFrame to poll this ref
     const audioDataRef = useRef({});
     const tsfDataRef = useRef({});
+    const positionDataRef = useRef({ x: null, y: null });
 
     const connect = useCallback(() => {
         if (wsRef.current?.readyState === WebSocket.OPEN) return;
@@ -37,6 +38,9 @@ export function useAudioWebSocket(url = DEFAULT_WS_URL) {
                 }
                 if (payload.tsfs) {
                     tsfDataRef.current = payload.tsfs;
+                }
+                if (payload.position) {
+                    positionDataRef.current = payload.position;
                 }
             } catch (e) {
                 console.error("Failed to parse WS message", e);
@@ -89,5 +93,5 @@ export function useAudioWebSocket(url = DEFAULT_WS_URL) {
         return false;
     }, []);
 
-    return { status, audioDataRef, tsfDataRef, sendBeep, sendVolume, sendIdentify };
+    return { status, audioDataRef, tsfDataRef, positionDataRef, sendBeep, sendVolume, sendIdentify };
 }

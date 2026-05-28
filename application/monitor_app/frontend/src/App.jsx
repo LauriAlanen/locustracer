@@ -114,7 +114,7 @@ function StatisticsView({ tsfDataRef }) {
 
 function App() {
     const { telemetryData, masterNodeId } = useTelemetry();
-    const { status: wsStatus, audioDataRef, tsfDataRef, sendBeep, sendVolume, sendIdentify } = useAudioWebSocket();
+    const { status: wsStatus, audioDataRef, tsfDataRef, positionDataRef, sendBeep, sendVolume, sendIdentify } = useAudioWebSocket();
 
     return (
         <Router>
@@ -146,6 +146,7 @@ function App() {
                         <LocationMapView 
                             telemetryData={telemetryData} 
                             audioDataRef={audioDataRef} 
+                            positionDataRef={positionDataRef}
                             masterNodeId={masterNodeId} 
                         />
                     } />
