@@ -29,11 +29,11 @@ void audio_transmitter_init(void) {
         return;
     }
 
-    dest_addr.sin_addr.s_addr = inet_addr(PC_IP_ADDRESS);
+    dest_addr.sin_addr.s_addr = inet_addr(SERVER_IP);
     dest_addr.sin_family = AF_INET;
     dest_addr.sin_port = htons(AUDIO_UDP_PORT);
     
-    ESP_LOGI(TAG, "Audio transmitter ready. Target: %s:%d", PC_IP_ADDRESS, AUDIO_UDP_PORT);
+    ESP_LOGI(TAG, "Audio transmitter ready. Target: %s:%d", SERVER_IP, AUDIO_UDP_PORT);
 }
 
 void audio_transmitter_send(int32_t *data, size_t num_samples, uint64_t tsf_time) {

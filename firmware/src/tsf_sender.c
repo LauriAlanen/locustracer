@@ -29,7 +29,7 @@ static void tsf_sender_task(void *pvParameters)
     }
 
     struct sockaddr_in dest_addr;
-    dest_addr.sin_addr.s_addr = inet_addr(PC_IP_ADDRESS);
+    dest_addr.sin_addr.s_addr = inet_addr(SERVER_IP);
     dest_addr.sin_family = AF_INET;
     dest_addr.sin_port = htons(TSF_UDP_PORT);
 

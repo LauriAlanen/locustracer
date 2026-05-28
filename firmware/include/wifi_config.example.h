@@ -6,6 +6,6 @@
 
 #define WIFI_SSID "Your_Network_SSID"
 #define WIFI_PASS "Your_Network_Password"
-#define PC_IP_ADDRESS "192.168.1.100" // Change this to your PC's IP address
+#define SERVER_IP "192.168.1.100" // Change this to your server's IP address
 
 #endif // WIFI_CONFIG_EXAMPLE_H

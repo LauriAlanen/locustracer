@@ -20,8 +20,9 @@ void api_client_set_node_type(bool is_master) {
     g_is_master_node = is_master;
 }
 
+#include "wifi_config.h"
 
-#define WEBSOCKET_URL "ws://192.168.3.65:8009/ws"
+#define WEBSOCKET_PORT 8009
 #define API_TASK_DELAY_MS 5000 // 5 seconds for telemetry
 
 static temperature_sensor_handle_t temp_sensor = NULL;
@@ -216,12 +217,16 @@ static void websocket_event_handler(void *handler_args, esp_event_base_t base, i
     }
 }
 
+static char websocket_url[64];
+
 void api_client_init(void) {
     init_cpu_temp_sensor();
     
-    ESP_LOGI(TAG, "Initializing WebSocket Client");
+    snprintf(websocket_url, sizeof(websocket_url), "ws://%s:%d/ws", SERVER_IP, WEBSOCKET_PORT);
+    
+    ESP_LOGI(TAG, "Initializing WebSocket Client with URL: %s", websocket_url);
     esp_websocket_client_config_t websocket_cfg = {};
-    websocket_cfg.uri = WEBSOCKET_URL;
+    websocket_cfg.uri = websocket_url;
     websocket_cfg.reconnect_timeout_ms = 5000;
     websocket_cfg.network_timeout_ms = 5000;
     websocket_cfg.ping_interval_sec = 10;
