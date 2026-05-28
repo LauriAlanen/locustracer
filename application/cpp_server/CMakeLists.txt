@@ -10,10 +10,19 @@ find_package(Threads REQUIRED)
 # Find FFTW3 and Eigen3
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(FFTW3 REQUIRED fftw3)
-include_directories(/usr/include/eigen3)
+if(EXISTS "/opt/homebrew/include/eigen3")
+    include_directories(/opt/opt/homebrew/include/eigen3) # Fallback for some systems
+    include_directories(/opt/homebrew/include/eigen3)
+else()
+    include_directories(/usr/include/eigen3)
+endif()
 
 # Include directories
 include_directories(include ${FFTW3_INCLUDE_DIRS})
+link_directories(${FFTW3_LIBRARY_DIRS})
+if(EXISTS "/opt/homebrew/lib")
+    link_directories(/opt/homebrew/lib)
+endif()
 
 # Source files
 set(SOURCES
