@@ -24,8 +24,8 @@ COPY . .
 RUN cd application/cpp_server && cmake . && make
 
 # Install node dependencies
-RUN cd application/monitor_app/backend && npm install
-RUN cd application/monitor_app/frontend && npm install
+RUN cd application/monitor_app/backend && rm -f package-lock.json && npm install
+RUN cd application/monitor_app/frontend && rm -f package-lock.json && npm install
 
 EXPOSE 5006/udp 8009 5173
 
