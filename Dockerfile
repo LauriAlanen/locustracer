@@ -8,6 +8,9 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     cmake \
     libgtest-dev \
+    pkg-config \
+    libfftw3-dev \
+    libeigen3-dev \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
