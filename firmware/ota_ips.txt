@@ -1,6 +1,6 @@
 # List the IP addresses or hostnames (eg. locustracer-19bc.local) of your ESP32 nodes here, one per line.
 # Lines starting with # are ignored.
-192.168.3.13
-192.168.3.14
-192.168.3.15
-192.168.3.16
+10.111.101.101
+10.111.101.30
+10.111.101.157
+10.111.101.92
