@@ -558,7 +558,7 @@ function ConferenceTable() {
     );
 }
 
-function Scene({ telemetryData, audioDataRef, positionDataRef, masterNodeId, showAxes, showGrid, showInfo, nodeConfig }) {
+function Scene({ telemetryData, audioDataRef, positionDataRef, masterNodeId, showAxes, showGrid, showInfo, nodeConfig, showCornerLabels }) {
     const smoothedRmsRef = useRef({});
     const [currentRms, setCurrentRms] = useState({});
     const [sourceTarget, setSourceTarget] = useState([0, 0.2, 0]);
@@ -626,6 +626,11 @@ function Scene({ telemetryData, audioDataRef, positionDataRef, masterNodeId, sho
         const newCurrentRms = {};
         const newConnections = [];
 
+        // Määritetään kynnysarvo (Threshold)
+        // Esim. 0.05 tarkoittaa, että RMS-voimakkuuden pitää ylittää tämä, 
+        // jotta mitään visualisoidaan.
+        const RMS_THRESHOLD = 0.2;
+
         nodeLayout.nodes.forEach(node => {
             const samples = audioData[node.id];
             let rms = 0;
@@ -663,21 +668,26 @@ function Scene({ telemetryData, audioDataRef, positionDataRef, masterNodeId, sho
 
         setCurrentRms(newCurrentRms);
 
-        if (totalWeight > 0.001) {
+        // TÄSTÄ ALKAA MUUTOS: 
+        // Tarkistetaan ylittääkö huoneen kovin ääni (maxRms) asetetun kynnysarvon
+        if (maxRms >= RMS_THRESHOLD && totalWeight > 0.001) {
             let sourceX, sourceZ;
 
             // Prefer true TDOA position from backend if available
-            if (positionDataRef && positionDataRef.current && positionDataRef.current.x !== null && positionDataRef.current.y !== null) {
-                // TDOA API coords: origin at reference corner (0–4m x, 0–3.5m y)
-                // 3D world coords: origin at room center (-2–+2m x, -1.75–+1.75m z)
-                // Offset: subtract half room dimensions to convert
-                sourceX = positionDataRef.current.x - 2.0;
-                sourceZ = positionDataRef.current.y - 1.75; // TDOA Y → 3D Z
-            } else {
-                // Fallback: RMS-weighted average across nodes
-                sourceX = totalWeightedX / totalWeight;
-                sourceZ = totalWeightedZ / totalWeight;
-            }
+            //if (positionDataRef && positionDataRef.current && positionDataRef.current.x !== null && positionDataRef.current.y !== null) {
+            // TDOA API coords: origin at reference corner (0–4m x, 0–3.5m y)
+            // 3D world coords: origin at room center (-2–+2m x, -1.75–+1.75m z)
+            // Offset: subtract half room dimensions to convert
+            // sourceX = positionDataRef.current.x - 2.0;
+            //sourceZ = positionDataRef.current.y - 1.75; // TDOA Y → 3D Z
+
+            console.log("X", positionDataRef.current.x)
+            console.log("Y", positionDataRef.current.y)
+            //} else {
+            // Fallback: RMS-weighted average across nodes
+            sourceX = totalWeightedX / totalWeight;
+            sourceZ = totalWeightedZ / totalWeight;
+            //}
 
             // Constrain to room boundaries
             sourceX = Math.max(-2.0, Math.min(2.0, sourceX));
@@ -687,6 +697,7 @@ function Scene({ telemetryData, audioDataRef, positionDataRef, masterNodeId, sho
             setSourceIntensity(maxRms);
             setConnections(newConnections);
         } else {
+            // Jos ääni alittaa kynnysarvon, nollataan visualisointi (taustahälyä ei näytetä)
             setSourceIntensity(0);
             setConnections([]);
         }
@@ -715,8 +726,8 @@ function Scene({ telemetryData, audioDataRef, positionDataRef, masterNodeId, sho
             <ConferenceTable />
             <ChestOfDrawers />
 
-            {/* Corner labels in 3D world */}
-            {cornerLabels.map(corner => (
+            {/* Corner labels — only when node config editor is open */}
+            {showCornerLabels && cornerLabels.map(corner => (
                 <CornerLabel
                     key={corner.id}
                     position={corner}
@@ -758,9 +769,26 @@ function Scene({ telemetryData, audioDataRef, positionDataRef, masterNodeId, sho
     );
 }
 
-export function AudioLocationMap({ telemetryData, audioDataRef, positionDataRef, masterNodeId, showAxes, showGrid, showInfo, nodeConfig }) {
+export function AudioLocationMap({ telemetryData, audioDataRef, positionDataRef, masterNodeId, showAxes, showGrid, showInfo, nodeConfig, showCornerLabels }) {
+    const containerRef = useRef();
+    const [isFullscreen, setIsFullscreen] = useState(false);
+
+    useEffect(() => {
+        const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
+        document.addEventListener('fullscreenchange', onFsChange);
+        return () => document.removeEventListener('fullscreenchange', onFsChange);
+    }, []);
+
+    const toggleFullscreen = () => {
+        if (!document.fullscreenElement) {
+            containerRef.current?.requestFullscreen();
+        } else {
+            document.exitFullscreen();
+        }
+    };
+
     return (
-        <div className="audio-map-wrapper">
+        <div ref={containerRef} className="audio-map-wrapper" style={{ position: 'relative' }}>
             <Canvas camera={{ position: [0, 5, 6], fov: 50 }} shadows>
                 <color attach="background" args={['#050810']} />
                 <Scene
@@ -772,8 +800,54 @@ export function AudioLocationMap({ telemetryData, audioDataRef, positionDataRef,
                     showGrid={showGrid}
                     showInfo={showInfo}
                     nodeConfig={nodeConfig}
+                    showCornerLabels={showCornerLabels}
                 />
             </Canvas>
+
+            {/* Fullscreen toggle button */}
+            <button
+                onClick={toggleFullscreen}
+                title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+                style={{
+                    position: 'absolute',
+                    top: '12px',
+                    right: '12px',
+                    width: '36px',
+                    height: '36px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'rgba(10, 15, 40, 0.75)',
+                    border: '1px solid rgba(0, 240, 255, 0.3)',
+                    borderRadius: '6px',
+                    color: '#00f0ff',
+                    cursor: 'pointer',
+                    backdropFilter: 'blur(8px)',
+                    zIndex: 10,
+                    transition: 'background 0.15s, border-color 0.15s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,240,255,0.15)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'rgba(10,15,40,0.75)'}
+            >
+                {isFullscreen ? (
+                    /* Compress icon */
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="4 14 10 14 10 20" />
+                        <polyline points="20 10 14 10 14 4" />
+                        <line x1="10" y1="14" x2="3" y2="21" />
+                        <line x1="21" y1="3" x2="14" y2="10" />
+                    </svg>
+                ) : (
+                    /* Expand icon */
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="15 3 21 3 21 9" />
+                        <polyline points="9 21 3 21 3 15" />
+                        <line x1="21" y1="3" x2="14" y2="10" />
+                        <line x1="3" y1="21" x2="10" y2="14" />
+                    </svg>
+                )}
+            </button>
         </div>
     );
 }
+

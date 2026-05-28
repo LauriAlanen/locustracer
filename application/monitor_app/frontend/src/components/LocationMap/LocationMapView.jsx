@@ -100,6 +100,7 @@ export function LocationMapView({ telemetryData, audioDataRef, positionDataRef, 
                         showGrid={showGrid}
                         showInfo={showInfo}
                         nodeConfig={nodeConfig}
+                        showCornerLabels={showNodeEditor}
                     />
                 </div>
             </section>
