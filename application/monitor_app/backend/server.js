@@ -21,6 +21,7 @@ const wss = new WebSocketServer({ noServer: true });
 
 // Node Data Buffer: IP -> [samples]
 const nodeData = {};
+let latestPosition = { x: null, y: null };
 
 // Telemetry State
 const latestTelemetry = {
@@ -89,6 +90,10 @@ CPU:  ${data.cpu_temp}
 
 app.get('/telemetry', (req, res) => {
     res.json(latestTelemetry);
+});
+
+app.get('/position', (req, res) => {
+    res.json(latestPosition);
 });
 
 // Periodic System Stats Calculator (Runs every 1s)
@@ -238,6 +243,34 @@ udpServer.on('listening', () => {
 });
 
 udpServer.bind(UDP_PORT, '0.0.0.0');
+
+// ----------------------------------------------------
+// TDOA Position UDP Listener (Receives from cpp_server on 5010)
+// ----------------------------------------------------
+const tdoaUdpServer = dgram.createSocket('udp4');
+
+tdoaUdpServer.on('error', (err) => {
+    console.error(`TDOA UDP Server error:\n${err.stack}`);
+    tdoaUdpServer.close();
+});
+
+tdoaUdpServer.on('message', (msg, rinfo) => {
+    try {
+        const data = JSON.parse(msg.toString());
+        if (data.type === 'tdoa' && data.x !== undefined && data.y !== undefined) {
+            latestPosition = { x: data.x, y: data.y };
+        }
+    } catch (e) {
+        // Ignore parse errors
+    }
+});
+
+tdoaUdpServer.on('listening', () => {
+    const address = tdoaUdpServer.address();
+    console.log(`Node.js TDOA UDP server listening on ${address.address}:${address.port}`);
+});
+
+tdoaUdpServer.bind(5010, '127.0.0.1');
 
 // ----------------------------------------------------
 // WebSocket Upgrade Handler (Routing)

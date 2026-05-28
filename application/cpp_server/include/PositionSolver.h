@@ -5,6 +5,10 @@
 #include <string>
 #include <unordered_map>
 #include <Eigen/Dense>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 
 struct NodeConfig {
     std::string ip_address;
@@ -15,6 +19,7 @@ struct NodeConfig {
 class PositionSolver : public IPipelineStage {
 public:
     PositionSolver(const std::vector<NodeConfig>& nodes, double speed_of_sound = 343.0);
+    ~PositionSolver();
 
     bool process(PipelineContext& context) override;
 
@@ -28,6 +33,9 @@ private:
     double max_x_;
     double min_y_;
     double max_y_;
+
+    int sock_fd_;
+    struct sockaddr_in dest_addr_;
 };
 
 #endif // POSITIONSOLVER_H
