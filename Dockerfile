@@ -17,15 +17,18 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
+# Cache Node dependencies first (this step only reruns if package.json changes)
+COPY application/monitor_app/backend/package.json application/monitor_app/backend/
+RUN cd application/monitor_app/backend && rm -f package-lock.json && npm install
+
+COPY application/monitor_app/frontend/package.json application/monitor_app/frontend/
+RUN cd application/monitor_app/frontend && rm -f package-lock.json && npm install
+
 # Copy the whole project
 COPY . .
 
-# Build cpp_server
+# Build cpp_server (only reruns if project files change)
 RUN cd application/cpp_server && cmake . && make
-
-# Install node dependencies
-RUN cd application/monitor_app/backend && rm -f package-lock.json && npm install
-RUN cd application/monitor_app/frontend && rm -f package-lock.json && npm install
 
 EXPOSE 5006/udp 8009 5173
 
