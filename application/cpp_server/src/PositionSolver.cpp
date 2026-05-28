@@ -3,11 +3,13 @@
 #include <cmath>
 #include <limits>
 #include <algorithm>
+#include <cstring>
 
 PositionSolver::PositionSolver(const std::vector<NodeConfig>& nodes, double speed_of_sound)
     : speed_of_sound_(speed_of_sound),
       min_x_(std::numeric_limits<double>::max()), max_x_(std::numeric_limits<double>::lowest()),
-      min_y_(std::numeric_limits<double>::max()), max_y_(std::numeric_limits<double>::lowest()) {
+      min_y_(std::numeric_limits<double>::max()), max_y_(std::numeric_limits<double>::lowest()),
+      sock_fd_(-1) {
     for (const auto& n : nodes) {
         node_positions_[n.ip_address] = Eigen::Vector2d(n.x, n.y);
         min_x_ = std::min(min_x_, n.x);
@@ -17,6 +19,22 @@ PositionSolver::PositionSolver(const std::vector<NodeConfig>& nodes, double spee
     }
     if (!nodes.empty()) {
         ref_node_ip_ = nodes.front().ip_address;
+    }
+
+    sock_fd_ = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock_fd_ >= 0) {
+        memset(&dest_addr_, 0, sizeof(dest_addr_));
+        dest_addr_.sin_family = AF_INET;
+        dest_addr_.sin_port = htons(5010);
+        inet_pton(AF_INET, "127.0.0.1", &dest_addr_.sin_addr);
+    } else {
+        std::cerr << "[PositionSolver] Failed to create UDP socket." << std::endl;
+    }
+}
+
+PositionSolver::~PositionSolver() {
+    if (sock_fd_ >= 0) {
+        close(sock_fd_);
     }
 }
 
@@ -102,6 +120,11 @@ bool PositionSolver::process(PipelineContext& context) {
     if (s.x() >= min_x_ && s.x() <= max_x_ && s.y() >= min_y_ && s.y() <= max_y_) {
         context.location_valid = true;
         std::cout << "[Position] Estimated Location: (" << s.x() << ", " << s.y() << ")" << std::endl;
+        
+        if (sock_fd_ >= 0) {
+            std::string msg = "{\"type\":\"tdoa\", \"x\": " + std::to_string(s.x()) + ", \"y\": " + std::to_string(s.y()) + "}";
+            sendto(sock_fd_, msg.c_str(), msg.length(), 0, (struct sockaddr*)&dest_addr_, sizeof(dest_addr_));
+        }
     } else {
         context.location_valid = false;
     }

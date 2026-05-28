@@ -54,8 +54,8 @@ static void tsf_sender_task(void *pvParameters)
         uint64_t final_tsf = esp_wifi_get_tsf_time(WIFI_IF_STA);
 
         tsf_payload_t payload;
-        // Derive globally uniform sequence ID from the actual TSF time
-        payload.sequence_id = (uint32_t)(final_tsf / interval_us);
+        // Derive globally uniform sequence ID from the target boundary, not the slightly jittery actual time
+        payload.sequence_id = (uint32_t)(next_boundary / interval_us);
         payload.tsf_time = final_tsf; // Sends as little-endian by default on ESP32
 
         int err = sendto(sock, &payload, sizeof(payload), 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr));

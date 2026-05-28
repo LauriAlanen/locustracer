@@ -35,26 +35,42 @@ static void i2s_mic_reader_task(void *pvParameters) {
             // Get the raw TSF time immediately after the blocking read completes.
             uint64_t current_tsf = esp_wifi_get_tsf_time(WIFI_IF_STA);
             
-            // The ideal time advanced strictly by the number of samples at exactly 48000 Hz.
+            // Time alignment logic to remove scheduling jitter and track clock drift
             static uint64_t total_samples_read = 0;
-            static int64_t tsf_offset = 0;
+            static int64_t offset_history[100];
+            static int history_idx = 0;
+            static bool history_filled = false;
+            static int64_t smoothed_offset = 0;
 
-            uint64_t ideal_audio_time = (total_samples_read * 1000000ULL) / 48000ULL;
-            int64_t current_offset = (int64_t)current_tsf - (int64_t)ideal_audio_time;
+            int64_t expected_time = (int64_t)((total_samples_read + samples_read) * 1000000ULL / 48000);
+            int64_t current_offset = (int64_t)current_tsf - expected_time;
 
-            if (total_samples_read == 0) {
-                tsf_offset = current_offset;
-            } else {
-                // Exponential Moving Average (Alpha = 1/64)
-                // This eliminates OS scheduling jitter but perfectly tracks crystal oscillator drift.
-                tsf_offset = tsf_offset + ((current_offset - tsf_offset) / 64);
+            offset_history[history_idx] = current_offset;
+            history_idx = (history_idx + 1) % 100;
+            if (history_idx == 0) history_filled = true;
+
+            int64_t min_offset = current_offset;
+            int limit = history_filled ? 100 : history_idx;
+            for (int i = 0; i < limit; i++) {
+                if (offset_history[i] < min_offset) {
+                    min_offset = offset_history[i];
+                }
             }
 
-            uint64_t filtered_tsf = ideal_audio_time + tsf_offset;
-            total_samples_read += samples_read;
+            if (smoothed_offset == 0) {
+                smoothed_offset = min_offset;
+            } else {
+                // EMA to smooth out any jumps from minimum filter
+                smoothed_offset = (smoothed_offset * 127 + min_offset) / 128;
+            }
+
+            // The accurate TSF time for the FIRST sample in this chunk
+            uint64_t chunk_start_tsf = (uint64_t)(smoothed_offset + (int64_t)(total_samples_read * 1000000ULL / 48000));
 
             // Send to Python Backend
-            audio_transmitter_send(raw_samples, samples_read, filtered_tsf);
+            audio_transmitter_send(raw_samples, samples_read, chunk_start_tsf);
+            
+            total_samples_read += samples_read;
 
             // Calculate a simple peak volume to verify data is arriving
             int32_t peak = 0;
@@ -74,7 +90,7 @@ static void i2s_mic_reader_task(void *pvParameters) {
 
             // Print the peak volume every ~1000ms
             if (++loop_counter >= 187) {
-                ESP_LOGI(TAG, "Audio Peak Vol: %ld | TSF: %llu (Raw: %llu)", (long)peak, filtered_tsf, current_tsf);
+                ESP_LOGI(TAG, "Audio Peak Vol: %ld | TSF: %llu (offset: %lld)", (long)peak, chunk_start_tsf, (long long)smoothed_offset);
                 loop_counter = 0;
             }
             
