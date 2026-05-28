@@ -128,9 +128,9 @@ int main(int argc, char* argv[]) {
 
     std::thread config_thread(configListenerTask, synchronizer, frame_size);
 
-    // Main loop: Print statistics periodically
+    // Main loop: Print statistics periodically (reduced to 60s to reduce log spam)
     while (global_running) {
-        std::this_thread::sleep_for(std::chrono::seconds(10));
+        std::this_thread::sleep_for(std::chrono::seconds(60));
         
         node_manager.printAndResetStats();
     }
