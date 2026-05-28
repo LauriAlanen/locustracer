@@ -19,12 +19,13 @@ print_usage() {
     echo "Usage: ./locustracer.sh [command]"
     echo ""
     echo "Commands:"
-    echo "  start               Start the system natively."
-    echo "  start --docker      Start the system using Docker Compose."
-    echo "  start --container   (Internal use) Start the system inside the Docker container."
-    echo "  start --no-frontend Start the system natively without the frontend."
-    echo "  start --only-frontend Start only the frontend natively."
-    echo "  stop                Stop all native processes and Docker containers."
+    echo "  start                      Start the system natively."
+    echo "  start --docker             Start the system using Docker Compose."
+    echo "  start --docker --only-frontend Start only the frontend in Docker."
+    echo "  start --container          (Internal use) Start the system inside the Docker container."
+    echo "  start --no-frontend        Start the system natively without the frontend."
+    echo "  start --only-frontend      Start only the frontend natively."
+    echo "  stop                       Stop all native processes and Docker containers."
     echo ""
 }
 
@@ -69,6 +70,46 @@ fi
 
 if [ "$COMMAND" == "start" ]; then
     if [ "$DOCKER_MODE" == "1" ]; then
+        if [ "$ONLY_FRONTEND_FLAG" == "1" ]; then
+            echo "Starting only Frontend via Docker..."
+            DOCKER_BIN="docker"
+            if ! command -v docker &> /dev/null; then
+                if [ -f "/Applications/Docker.app/Contents/Resources/bin/docker" ]; then
+                    DOCKER_BIN="/Applications/Docker.app/Contents/Resources/bin/docker"
+                else
+                    echo "Error: 'docker' command not found."
+                    exit 1
+                fi
+            fi
+            
+            # Gracefully wait for Docker daemon to start (up to 60 seconds)
+            echo "Waiting for Docker daemon to become responsive..."
+            for i in {1..30}; do
+                if $DOCKER_BIN ps &> /dev/null; then
+                    break
+                fi
+                echo -n "."
+                sleep 2
+            done
+            echo ""
+            
+            if ! $DOCKER_BIN ps &> /dev/null; then
+                echo "Error: Docker daemon is not running."
+                exit 1
+            fi
+            
+            $DOCKER_BIN run -it --name locustracer-frontend \
+              --rm \
+              -p 5173:5173 \
+              -v "$(pwd)/application/monitor_app/frontend:/app" \
+              -w /app \
+              -e VITE_API_SERVER_URL="${VITE_API_SERVER_URL}" \
+              -e VITE_WS_URL="${VITE_WS_URL}" \
+              node:20-alpine \
+              sh -c "npm install && npm run dev -- --host 0.0.0.0"
+            exit 0
+        fi
+
         echo "Starting via Docker Compose..."
         if [ -z "$DOCKER_COMPOSE" ]; then
             echo "Error: Neither 'docker compose' nor 'docker-compose' command found."

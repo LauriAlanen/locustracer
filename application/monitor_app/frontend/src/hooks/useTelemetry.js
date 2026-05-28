@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const API_SERVER_URL = import.meta.env.VITE_API_SERVER_URL || 'http://127.0.0.1:8009';
+const API_SERVER_URL = import.meta.env.VITE_API_SERVER_URL || `http://${window.location.hostname}:8009`;
 
 export function useTelemetry(pollingIntervalMs = 2000) {
     const [telemetryData, setTelemetryData] = useState(null);

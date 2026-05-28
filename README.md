@@ -41,34 +41,58 @@ You can run the Locustracer software stack (C++ server, Node.js backend, and Rea
 
 ### Running Natively
 
-To start the system natively, run:
+To start all services (C++ server, Node.js backend, and React frontend) natively, run:
 
 ```bash
 ./locustracer.sh start
 ```
 
+To start **only** the React frontend natively, run:
+
+```bash
+./locustracer.sh start --only-frontend
+```
+
 ### Running via Docker
 
-To start the system using Docker, run:
+To start the entire system using Docker Compose, run:
 
 ```bash
 ./locustracer.sh start --docker
 ```
 
+To start **only** the React frontend in a standalone Docker container, run:
+
+```bash
+./locustracer.sh start --docker --only-frontend
+```
+
+> [!TIP]
+> **macOS Docker Enhancements in Script:**
+> The `./locustracer.sh` script includes robust helpers for macOS users:
+> - **Auto-Detection:** Automatically searches for and utilizes the macOS Docker bundle binary (`/Applications/Docker.app/Contents/Resources/bin/docker`) if the `docker` command is not yet in your global `PATH`.
+> - **Daemon Sync:** Gracefully polls and waits for the Docker daemon to become responsive (up to 60 seconds) if it is still booting up, preventing command failures.
+
 ### Stopping the System
 
-To cleanly stop all running processes and Docker containers, run:
+To cleanly stop all running processes (native or Docker), run:
 
 ```bash
 ./locustracer.sh stop
 ```
 
-This will run the `cpp_server`, Node.js backend, and frontend inside a single Docker container. The container is configured to use `network_mode: "host"`.
+When running the entire system in Docker, it runs the `cpp_server`, Node.js backend, and frontend inside a single container using `network_mode: "host"`.
 
 > [!IMPORTANT]
 > **Note for Mac Users:** Because the Docker container relies on host networking (to ensure that the node IP addresses are correctly visible in the UI), Mac users **MUST** enable "Host Networking" in their Docker Desktop settings. This feature is supported in Docker Desktop version 4.31 and later. If you cannot enable this, you may need to stick to native execution.
 >
 > Linux and Windows (via WSL2 mirrored networking mode) support this out-of-the-box.
+
+### Dynamic LAN Routing
+
+Locustracer supports dynamic LAN routing, allowing you to run the frontend and backend on different devices on the same local network (LAN):
+- The frontend dynamically resolves the backend service addresses using `window.location.hostname` (specifically implemented in `useTelemetry.js` and `useAudioWebSocket.js`) instead of a hardcoded `127.0.0.1`.
+- This ensures that if you host the monitor application on one server or laptop on your LAN, any device (like an iPad, mobile phone, or another computer) can navigate to that machine's IP address and automatically establish WebSocket and telemetry connections to the backend host.
 
 ## Agentic Workflow
 

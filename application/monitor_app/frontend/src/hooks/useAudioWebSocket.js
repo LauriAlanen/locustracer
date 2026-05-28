@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-export function useAudioWebSocket(url = 'ws://127.0.0.1:8009/ui-ws') {
+const DEFAULT_WS_URL = import.meta.env.VITE_WS_URL || `ws://${window.location.hostname}:8009/ui-ws`;
+
+export function useAudioWebSocket(url = DEFAULT_WS_URL) {
     const [status, setStatus] = useState('disconnected');
     const wsRef = useRef(null);
     

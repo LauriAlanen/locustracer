@@ -6,9 +6,10 @@ import { AudioStreamGrid } from './components/AudioStream/AudioStreamGrid';
 import { CombinedAudioStreamChart } from './components/AudioStream/CombinedAudioStreamChart';
 import { JitterChart } from './components/AudioStream/JitterChart';
 import { SystemOverviewCard } from './components/Telemetry/SystemOverviewCard';
+import { LocationMapView } from './components/LocationMap/LocationMapView';
 import { useTelemetry } from './hooks/useTelemetry';
 import { useAudioWebSocket } from './hooks/useAudioWebSocket';
-import { Microchip, Activity, Layers, BarChart2, LayoutDashboard } from 'lucide-react';
+import { Microchip, Activity, Layers, BarChart2, LayoutDashboard, Compass } from 'lucide-react';
 
 function Navigation() {
     const location = useLocation();
@@ -29,6 +30,22 @@ function Navigation() {
                 }}
             >
                 <LayoutDashboard size={18} /> Dashboard
+            </Link>
+            <Link 
+                to="/map" 
+                className={`nav-link ${location.pathname === '/map' ? 'active' : ''}`}
+                style={{
+                    padding: '0.5rem 1rem',
+                    color: location.pathname === '/map' ? '#fff' : 'rgba(255,255,255,0.6)',
+                    borderBottom: location.pathname === '/map' ? '2px solid #00f0ff' : 'none',
+                    textDecoration: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    fontWeight: 600
+                }}
+            >
+                <Compass size={18} /> Location Map
             </Link>
             <Link 
                 to="/statistics" 
@@ -123,6 +140,13 @@ function App() {
                             telemetryData={telemetryData} 
                             audioDataRef={audioDataRef} 
                             sendIdentify={sendIdentify} 
+                        />
+                    } />
+                    <Route path="/map" element={
+                        <LocationMapView 
+                            telemetryData={telemetryData} 
+                            audioDataRef={audioDataRef} 
+                            masterNodeId={masterNodeId} 
                         />
                     } />
                     <Route path="/statistics" element={
