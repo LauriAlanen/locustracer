@@ -127,6 +127,12 @@
     border-color: var(--success) !important;
 }
 
+.statusIndicators {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
 .statusPill {
     display: flex;
     align-items: center;
@@ -137,6 +143,52 @@
     border-radius: 20px;
     font-size: 0.9rem;
     font-weight: 600;
+}
+
+.twinToggleBtn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.2rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: inherit;
+}
+
+.twinToggleBtn:hover {
+    background: rgba(0, 240, 255, 0.1);
+    border-color: rgba(0, 240, 255, 0.3);
+}
+
+.twinActive {
+    background: rgba(0, 240, 255, 0.15);
+    border-color: var(--accent-primary);
+    color: #fff;
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+}
+
+.twinToggleIcon {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    border: 1px solid var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.5);
+    transition: all 0.2s ease;
+}
+
+.twinActive .twinToggleIcon {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: #000;
 }
 
 .dot {

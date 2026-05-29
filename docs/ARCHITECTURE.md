@@ -6,9 +6,10 @@ This document outlines the architecture of the Locustracer system, detailing the
 The system relies on a Master/Listener node topology:
 - **Master Node (e.g. S2 Mini)**: Has Temperature/Humidity sensors, a Buzzer, and acts as the central timekeeper.
 - **Listener Node (e.g. XIAO ESP32S3, DevKitC)**: Has I2S Microphones to capture audio.
+- **Digital Twin Simulator (Optional)**: A containerized simulator using `pyroomacoustics` that simulates a 2x2m room. It mimics 4 microphones at the room corners and sends simulated UDP AudioPackets using IP addresses `127.0.0.2` through `127.0.0.5` directly to the C++ Server on port `5006`.
 
 The data flow spans across:
-1. **UDP Audio Path (High Frequency)**: Audio packets are sent from Listener nodes via UDP to the C++ Server, jitter-buffered, and forwarded to the Node.js backend.
+1. **UDP Audio Path (High Frequency)**: Audio packets are sent from Listener nodes (or the Simulator) via UDP to the C++ Server, jitter-buffered, and forwarded to the Node.js backend.
 2. **WebSocket Telemetry Flow (Low Frequency)**: ESP32 nodes connect directly to the Node.js backend to report telemetry and receive configuration/commands.
 
 ## Data Flow Diagram
@@ -19,6 +20,11 @@ flowchart TD
     subgraph Firmware["Firmware (ESP32)"]
         MasterNode["Master Node\n(SHTC3, Buzzer)"]
         ListenerNode["Listener Node\n(I2S Mic)"]
+    end
+
+    %% Simulator Container
+    subgraph SimulatorContainer["Digital Twin Simulator"]
+        PyRoomSimulator["pyroomacoustics\n(2x2m Room)"]
     end
 
     %% C++ Server
@@ -38,9 +44,10 @@ flowchart TD
 
     %% Audio Data Flow (UDP)
     ListenerNode -- "Audio UDP Packet\n(SeqID, TSF, Samples)" --> UDPServer
+    PyRoomSimulator -- "Simulated UDP Packet\n(IPs: 127.0.0.2-127.0.0.5)" -.-> UDPServer
     UDPServer -- "Pushes Packets" --> JitterBuffer
     JitterBuffer -- "Forwarded Aligned Packets" --> BackendUDP
-    BackendUDP -- "Streams Audio Arrays (~60FPS)" --> ReactUI
+    BackendUDP -- "Streams Audio Arrays (~60FPS)\nFilters based on Active Twin" --> ReactUI
 
     %% Telemetry & Config Flow (WebSockets & REST)
     MasterNode -- "WS Telemetry (Temp/Hum)" --> BackendHTTP
@@ -53,10 +60,10 @@ flowchart TD
 ```
 
 ## UDP Audio Data Paths
-1. The **Firmware Listener Nodes** capture audio at 48KHz using I2S and package 256 samples per packet.
+1. The **Firmware Listener Nodes** capture audio at 48KHz using I2S and package 256 samples per packet. Alternatively, the **Digital Twin Simulator** generates simulated packets.
 2. The packet (with a Sequence ID and filtered TSF time) is sent to the **C++ Server** on UDP port `5006`.
 3. The **C++ Server** uses a `JitterBuffer` to reorder packets, mitigate network jitter, and drop delayed packets. It forwards aligned stream chunks to the Node.js Backend over `127.0.0.1:5008`.
-4. The **Node.js UDP Listener** updates system statistics (drift, packet loss, bandwidth) and buffers the audio. It broadcasts these arrays at ~60FPS to the connected React UI clients over WebSockets.
+4. The **Node.js UDP Listener** updates system statistics (drift, packet loss, bandwidth) and buffers the audio. It filters the broadcasted UDP streams based on whether the Digital Twin is active (ignoring physical hardware streams if active) and broadcasts these arrays at ~60FPS to the connected React UI clients over WebSockets.
 
 ## Telemetry Flow
 - Every ESP32 node runs an `api_client` task that connects via WebSocket (`/ws`) to the Node.js backend.

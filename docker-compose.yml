@@ -14,3 +14,13 @@ services:
       - NODE_ENV=production
       - NO_FRONTEND=${NO_FRONTEND:-false}
     restart: unless-stopped
+
+  simulator:
+    build:
+      context: ./application/simulator
+    container_name: locustracer_simulator
+    network_mode: "host"
+    environment:
+      - CPP_SERVER_IP=127.0.0.1
+      - CPP_SERVER_PORT=5006
+    restart: unless-stopped

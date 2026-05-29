@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SatelliteDish, Volume2, Check } from 'lucide-react';
 import styles from './Header.module.css';
 
@@ -6,6 +6,35 @@ export function Header({ wsStatus, masterNodeId, onBeep, onSetVolume }) {
     const [justBeeped, setJustBeeped] = useState(false);
     const [volume, setVolume] = useState(10); // default
     const [buzzMode, setBuzzMode] = useState('pitch');
+    const [digitalTwin, setDigitalTwin] = useState(false);
+
+    useEffect(() => {
+        fetch(`http://${window.location.hostname}:8009/digital-twin`)
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.active !== undefined) {
+                    setDigitalTwin(data.active);
+                }
+            })
+            .catch(err => console.error("Failed to fetch digital twin status", err));
+    }, []);
+
+    const toggleDigitalTwin = async () => {
+        const newState = !digitalTwin;
+        setDigitalTwin(newState);
+        try {
+            await fetch(`http://${window.location.hostname}:8009/digital-twin`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ active: newState })
+            });
+        } catch (err) {
+            console.error("Failed to set digital twin status", err);
+            // Revert on error
+            setDigitalTwin(!newState);
+        }
+    };
+
 
     const handleBeep = () => {
         if (!masterNodeId) {
@@ -71,6 +100,15 @@ export function Header({ wsStatus, masterNodeId, onBeep, onSetVolume }) {
                 ) : null}
 
                 <div className={styles.statusIndicators}>
+                    <button 
+                        onClick={toggleDigitalTwin}
+                        className={`${styles.twinToggleBtn} ${digitalTwin ? styles.twinActive : ''}`}
+                    >
+                        <div className={styles.twinToggleIcon}>
+                            {digitalTwin ? <Check size={14} /> : null}
+                        </div>
+                        Digital Twin
+                    </button>
                     <div className={styles.statusPill}>
                         <div className={`${styles.dot} ${wsStatus === 'connected' ? styles.pulseGreen : styles.pulseRed}`}></div>
                         <span>{wsStatus === 'connected' ? 'Stream Connected' : 'Stream Disconnected'}</span>

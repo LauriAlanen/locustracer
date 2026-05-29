@@ -89,6 +89,20 @@ This document describes the REST endpoints and WebSocket payloads used by the Lo
   }
   ```
 
+### `GET /digital-twin`
+**Description**: Retrieves the status of the Digital Twin simulation mode.
+- **Response**: `{"active": true}`
+
+### `POST /digital-twin`
+**Description**: Toggles the Digital Twin simulation mode. The internal simulator container API runs on `http://127.0.0.1:8010`.
+- **Request Body**:
+  ```json
+  {
+    "active": true
+  }
+  ```
+- **Response**: `{"status": "success", "active": true}`
+
 ## WebSocket Payloads
 
 ### 1. ESP32 -> Node.js (`ws://.../ws`)

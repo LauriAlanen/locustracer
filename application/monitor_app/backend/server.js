@@ -23,6 +23,9 @@ const wss = new WebSocketServer({ noServer: true });
 const nodeData = {};
 let latestPosition = { x: null, y: null };
 
+let digitalTwinMode = false;
+
+
 // Telemetry State
 const latestTelemetry = {
     master: {},
@@ -177,7 +180,34 @@ app.post('/nodes/config', (req, res) => {
     res.json({ status: 'success', current_config: currentNodesConfig });
 });
 
+// Digital Twin Simulator Toggle
+app.get('/digital-twin', (req, res) => {
+    res.json({ active: digitalTwinMode });
+});
+
+app.post('/digital-twin', async (req, res) => {
+    const { active } = req.body;
+    digitalTwinMode = !!active;
+
+    // Notify simulator
+    try {
+        const response = await fetch('http://127.0.0.1:8010/toggle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ active: digitalTwinMode })
+        });
+        if (!response.ok) {
+            console.error('Failed to notify simulator, status:', response.status);
+        }
+    } catch (err) {
+        console.error('Error notifying simulator:', err.message);
+    }
+
+    res.json({ status: 'success', active: digitalTwinMode });
+});
+
 // ----------------------------------------------------
+
 // UDP Listener (Receives from cpp_server on 5008)
 // ----------------------------------------------------
 const udpServer = dgram.createSocket('udp4');
@@ -196,6 +226,10 @@ udpServer.on('message', (msg, rinfo) => {
         if (ipBytes[i] === 0) break;
         ip += String.fromCharCode(ipBytes[i]);
     }
+
+    // Filter packets based on Digital Twin mode
+    if (digitalTwinMode && !ip.startsWith('127.0.0.')) return;
+    if (!digitalTwinMode && ip.startsWith('127.0.0.')) return;
 
     // Process network statistics
     sysStats.bytesSinceLastCheck += msg.length;
