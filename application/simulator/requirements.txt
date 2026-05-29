@@ -2,3 +2,5 @@ Flask==3.0.0
 numpy
 scipy
 pyroomacoustics
+requests
+requests-toolbelt

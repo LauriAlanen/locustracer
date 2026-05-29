@@ -13,11 +13,11 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY simulator.py .
+COPY *.py ./
 
 EXPOSE 8010
 
 # Note: when running this container to talk to a host or other container
 # using 127.0.0.1 and binding to 127.0.0.2 etc, it is HIGHLY RECOMMENDED
 # to run with --network host on Linux.
-CMD ["python", "simulator.py"]
+CMD ["python", "main.py"]
