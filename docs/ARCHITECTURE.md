@@ -6,7 +6,7 @@ This document outlines the architecture of the Locustracer system, detailing the
 The system relies on a Master/Listener node topology:
 - **Master Node (e.g. S2 Mini)**: Has Temperature/Humidity sensors, a Buzzer, and acts as the central timekeeper.
 - **Listener Node (e.g. XIAO ESP32S3, DevKitC)**: Has I2S Microphones to capture audio.
-- **Digital Twin Simulator (Optional)**: A containerized simulator using `pyroomacoustics` that simulates a 2x2m room. It mimics 4 microphones at the room corners and sends simulated UDP AudioPackets using IP addresses `127.0.0.2` through `127.0.0.5` directly to the C++ Server on port `5006`.
+- **Digital Twin Simulator (Optional)**: A containerized simulator using `pyroomacoustics` that simulates a 2x2m room. It mimics 4 microphones at the room corners and sends simulated UDP AudioPackets (with realistic ~200µs Wi-Fi TSF jitter to properly stress-test the `JitterBuffer`) using IP addresses `127.0.0.2` through `127.0.0.5` directly to the C++ Server on port `5006`. Additionally, it spins up a `TelemetrySimulator` background task that actively sends mocked environmental sensor telemetry (temperature, humidity, cpu_temp) to the Node.js backend's `POST /telemetry` endpoint at 5-second intervals, simulating real hardware nodes.
 
 The data flow spans across:
 1. **UDP Audio Path (High Frequency)**: Audio packets are sent from Listener nodes (or the Simulator) via UDP to the C++ Server, jitter-buffered, and forwarded to the Node.js backend.
@@ -25,6 +25,7 @@ flowchart TD
     %% Simulator Container
     subgraph SimulatorContainer["Digital Twin Simulator"]
         PyRoomSimulator["pyroomacoustics\n(2x2m Room)"]
+        TelemetrySim["TelemetrySimulator\n(Task)"]
     end
 
     %% C++ Server
@@ -44,7 +45,7 @@ flowchart TD
 
     %% Audio Data Flow (UDP)
     ListenerNode -- "Audio UDP Packet\n(SeqID, TSF, Samples)" --> UDPServer
-    PyRoomSimulator -- "Simulated UDP Packet\n(IPs: 127.0.0.2-127.0.0.5)" -.-> UDPServer
+    PyRoomSimulator -- "Simulated UDP Packet\n(IPs: 127.0.0.2-127.0.0.5)\nwith ~200µs TSF Jitter" -.-> UDPServer
     UDPServer -- "Pushes Packets" --> JitterBuffer
     JitterBuffer -- "Forwarded Aligned Packets" --> BackendUDP
     BackendUDP -- "Streams Audio Arrays (~60FPS)\nFilters based on Active Twin" --> ReactUI
@@ -52,6 +53,7 @@ flowchart TD
     %% Telemetry & Config Flow (WebSockets & REST)
     MasterNode -- "WS Telemetry (Temp/Hum)" --> BackendHTTP
     ListenerNode -- "WS Telemetry (CPU)" --> BackendHTTP
+    TelemetrySim -- "REST POST /telemetry\n(127.0.0.2-127.0.0.5 every 5s)" -.-> BackendHTTP
     BackendHTTP -- "WS Config / Commands" --> MasterNode
     BackendHTTP -- "WS Config / Commands" --> ListenerNode
     

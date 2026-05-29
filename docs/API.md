@@ -5,7 +5,7 @@ This document describes the REST endpoints and WebSocket payloads used by the Lo
 ## HTTP Endpoints (Port 8009)
 
 ### `POST /telemetry`
-**Description**: Receives telemetry data from a node. Note: Usually handled via WebSockets, but available over REST.
+**Description**: Receives telemetry data from a node. Note: Usually handled via WebSockets for physical hardware, but available over REST. This REST endpoint is actively used by the Digital Twin's `TelemetrySimulator` task to send mocked environmental data at 5-second intervals for the virtual loopback IPs (`127.0.0.2` - `127.0.0.5`).
 - **Request Body**:
   ```json
   {
@@ -94,7 +94,7 @@ This document describes the REST endpoints and WebSocket payloads used by the Lo
 - **Response**: `{"active": true}`
 
 ### `POST /digital-twin`
-**Description**: Toggles the Digital Twin simulation mode. The internal simulator container API runs on `http://127.0.0.1:8010`.
+**Description**: Toggles the Digital Twin simulation mode. The internal simulator container API runs on `http://127.0.0.1:8010`. When active, it emits AudioPackets with realistic ~200µs Wi-Fi TSF jitter and spins up a `TelemetrySimulator` background task to emit mocked node telemetry at 5s intervals.
 - **Request Body**:
   ```json
   {
