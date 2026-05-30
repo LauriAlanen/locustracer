@@ -19,11 +19,21 @@ void AudioSynchronizer::pushPacket(const std::string& ip_address, const AudioPac
         num_samples = MAX_SAMPLES_PER_PACKET;
     }
 
-    // Convert tsf_time (microseconds) to absolute sample index
-    // Note: tsf_time might overflow or roll over, but assuming 64-bit it takes a long time.
-    uint64_t start_sample_idx = (packet->tsf_time * sample_rate_) / 1000000;
-
     auto& buf = node_buffers_[ip_address];
+
+    uint64_t raw_idx = (packet->tsf_time * sample_rate_) / 1000000;
+    if (!buf.has_first_packet) {
+        buf.expected_next_idx = raw_idx;
+        buf.has_first_packet = true;
+    } else {
+        int64_t drift = static_cast<int64_t>(raw_idx) - static_cast<int64_t>(buf.expected_next_idx);
+        if (std::abs(drift) > 1000) {
+            buf.expected_next_idx = raw_idx;
+        }
+    }
+
+    uint64_t start_sample_idx = buf.expected_next_idx;
+    buf.expected_next_idx += num_samples;
 
     // First time initialization to align frames
     if (!initialized_) {
@@ -93,6 +103,13 @@ void AudioSynchronizer::tryEmitFrame() {
 
         // Advance to next frame
         next_frame_start_idx_ += frame_size_;
+
+        std::cout << "[Stage 1 - Sync] Yielding frame. Target TSF: " << context.start_tsf 
+                  << " us. Node max sample indices: ";
+        for (const auto& pair : node_buffers_) {
+            std::cout << pair.first << ":" << pair.second.max_sample_index << " ";
+        }
+        std::cout << std::endl;
 
         // Execute pipeline
         bool abort = false;

@@ -97,9 +97,6 @@ void UDPServer::receiveLoop() {
             std::string ip_address = inet_ntoa(client_addr.sin_addr);
             const AudioPacket* packet = reinterpret_cast<const AudioPacket*>(buffer);
             
-            // Pass to node manager
-            node_manager_.processPacket(ip_address, packet, n);
-
             // Push to JitterBuffer
             {
                 std::lock_guard<std::mutex> lock(jb_mutex_);
@@ -122,6 +119,8 @@ void UDPServer::processAndForwardJitterBuffers() {
                 AudioPacket out_packet;
                 // Pop as many packets as are ready (to catch up if needed)
                 while (jb.pop(out_packet)) {
+                    node_manager_.processPacket(ip_address, &out_packet, sizeof(AudioPacket));
+
                     char forward_buf[2048];
                     std::memset(forward_buf, 0, 16);
                     std::strncpy(forward_buf, ip_address.c_str(), 15);

@@ -54,7 +54,10 @@ bool GCCPhat::process(PipelineContext& context) {
         // Also store reverse for convenience
         context.tdoa_results[{ref_ip, pair.first}] = -delay;
         
-        // std::cout << "[GCC-PHAT] TDOA between " << pair.first << " and " << ref_ip << ": " << delay * 1000.0 << " ms" << std::endl;
+        double delay_in_ms = delay * 1000.0;
+        double delay_in_samples = delay * context.sample_rate;
+        std::cout << "[GCC-PHAT] TDOA between " << pair.first << " and " << ref_ip 
+                  << ": " << delay_in_samples << " samples, " << delay_in_ms << " ms" << std::endl;
     }
 
     return true; // Continue pipeline

@@ -28,6 +28,12 @@ bool VADFilter::process(PipelineContext& context) {
         }
     }
 
+    static int frame_count = 0;
+    if (++frame_count % 10 == 0) {
+        std::cout << "[Stage 2 - VAD] Calculated energy: " << max_energy 
+                  << " | Threshold: " << energy_threshold_ << std::endl;
+    }
+
     if (max_energy > energy_threshold_) {
         context.vad_active = true;
         // std::cout << "[VAD] Active (Energy: " << max_energy << ")" << std::endl;

@@ -79,6 +79,8 @@ bool PositionSolver::process(PipelineContext& context) {
     }
     s /= node_positions_.size();
 
+    std::cout << "[Stage 4 - Solver] Initial guess s: (" << s.x() << ", " << s.y() << ")" << std::endl;
+
     int max_iters = 20;
     double tolerance = 1e-6;
 
@@ -110,8 +112,13 @@ bool PositionSolver::process(PipelineContext& context) {
 
         s += delta;
 
+        std::cout << "[Stage 4 - Solver] Iter " << iter << " delta.norm(): " << delta.norm() << std::endl;
+
         if (delta.norm() < tolerance) {
             break;
+        }
+        if (iter == max_iters - 1) {
+            std::cout << "[Stage 4 - Solver] WARNING: Gauss-Newton hit max_iters (" << max_iters << ") without converging." << std::endl;
         }
     }
 
