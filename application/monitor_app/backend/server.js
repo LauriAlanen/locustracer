@@ -269,6 +269,24 @@ app.post('/simulation/toggle', (req, res) => {
     const reqPost = http.request(options, (resPost) => {
         if (resPost.statusCode !== 200) {
             console.error(`Twin container returned ${resPost.statusCode}`);
+        } else if (active) {
+            // Auto-configure node positions for simulation
+            currentNodesConfig = {
+                nodes: [
+                    { ip: "127.0.0.2", x: 0, y: 0 },
+                    { ip: "127.0.0.3", x: 4.0, y: 0 },
+                    { ip: "127.0.0.4", x: 0, y: 3.5 },
+                    { ip: "127.0.0.5", x: 4.0, y: 3.5 }
+                ],
+                reference_node: "127.0.0.2"
+            };
+
+            const message = Buffer.from(JSON.stringify(currentNodesConfig));
+            const client = dgram.createSocket('udp4');
+            client.send(message, 5011, '127.0.0.1', (err) => {
+                if (err) console.error("Failed to forward simulation nodes config to C++ server:", err);
+                client.close();
+            });
         }
     });
 

@@ -12,6 +12,7 @@ export function LocationMapView({ telemetryData, audioDataRef, positionDataRef, 
     const [showGrid, setShowGrid] = useState(true);
     const [showInfo, setShowInfo] = useState(true);
     const [showNodeEditor, setShowNodeEditor] = useState(false);
+    const [positionMode, setPositionMode] = useState('cpp');
     // nodeConfig: array of { ip, x, y, isReference } from NodePositionEditor after save
     const [nodeConfig, setNodeConfig] = useState([]);
 
@@ -62,6 +63,14 @@ export function LocationMapView({ telemetryData, audioDataRef, positionDataRef, 
                     <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                         <button
                             className="control-btn"
+                            onClick={() => setPositionMode(prev => prev === 'cpp' ? 'frontend' : 'cpp')}
+                            style={btnStyle}
+                        >
+                            <Settings2 size={16} />
+                            Engine: {positionMode === 'cpp' ? 'C++ GCC-PHAT' : 'Frontend RMS'}
+                        </button>
+                        <button
+                            className="control-btn"
                             onClick={() => setShowNodeEditor(!showNodeEditor)}
                             style={showNodeEditor ? activeBtnStyle : btnStyle}
                         >
@@ -101,6 +110,7 @@ export function LocationMapView({ telemetryData, audioDataRef, positionDataRef, 
                         showInfo={showInfo}
                         nodeConfig={nodeConfig}
                         showCornerLabels={showNodeEditor}
+                        positionMode={positionMode}
                     />
                 </div>
             </section>

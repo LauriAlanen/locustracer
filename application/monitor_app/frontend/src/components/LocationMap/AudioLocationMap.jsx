@@ -558,7 +558,7 @@ function ConferenceTable() {
     );
 }
 
-function Scene({ telemetryData, audioDataRef, positionDataRef, masterNodeId, showAxes, showGrid, showInfo, nodeConfig, showCornerLabels }) {
+function Scene({ telemetryData, audioDataRef, positionDataRef, masterNodeId, showAxes, showGrid, showInfo, nodeConfig, showCornerLabels, positionMode }) {
     const smoothedRmsRef = useRef({});
     const [currentRms, setCurrentRms] = useState({});
     const [sourceTarget, setSourceTarget] = useState([0, 0.2, 0]);
@@ -674,7 +674,7 @@ function Scene({ telemetryData, audioDataRef, positionDataRef, masterNodeId, sho
             let sourceX, sourceZ;
 
             // Prefer true TDOA position from backend if available
-            if (positionDataRef && positionDataRef.current && positionDataRef.current.x !== null && positionDataRef.current.y !== null) {
+            if (positionMode === 'cpp' && positionDataRef && positionDataRef.current && positionDataRef.current.x !== null && positionDataRef.current.y !== null) {
                 // TDOA API coords: origin at reference corner (0–4m x, 0–3.5m y)
                 // 3D world coords: origin at room center (-2–+2m x, -1.75–+1.75m z)
                 // Offset: subtract half room dimensions to convert
@@ -769,7 +769,7 @@ function Scene({ telemetryData, audioDataRef, positionDataRef, masterNodeId, sho
     );
 }
 
-export function AudioLocationMap({ telemetryData, audioDataRef, positionDataRef, masterNodeId, showAxes, showGrid, showInfo, nodeConfig, showCornerLabels }) {
+export function AudioLocationMap({ telemetryData, audioDataRef, positionDataRef, masterNodeId, showAxes, showGrid, showInfo, nodeConfig, showCornerLabels, positionMode }) {
     const containerRef = useRef();
     const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -801,6 +801,7 @@ export function AudioLocationMap({ telemetryData, audioDataRef, positionDataRef,
                     showInfo={showInfo}
                     nodeConfig={nodeConfig}
                     showCornerLabels={showCornerLabels}
+                    positionMode={positionMode}
                 />
             </Canvas>
 
