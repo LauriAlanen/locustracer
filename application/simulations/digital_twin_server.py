@@ -200,8 +200,15 @@ class DigitalTwinServer:
                 # Attenuate and apply snap volume
                 extracted_chunk = extracted_chunk * (1.0 / max(d, 0.1)) * self.volume
                 
-                # Baseline 50dB SPL room noise (assuming 120dB SPL is full 32-bit scale, 50dB is -70dB FS = ~676,000 amplitude)
-                baseline_noise = np.random.uniform(-676000.0, 676000.0, extracted_chunk.shape)
+                # Baseline 50dB SPL room noise (~676,000 amplitude)
+                # We use structured noise (mains hum, fan, turbulence) so the envelope actually oscillates on the UI!
+                t_chunk_arr = np.arange(self.chunk_samples) / self.fs + t_sim
+                mains_hum = np.sin(2 * np.pi * 50 * t_chunk_arr) * 100000.0
+                fan_noise = np.sin(2 * np.pi * 120 * t_chunk_arr) * 150000.0
+                turbulence = (np.sin(2 * np.pi * 3.1 * t_chunk_arr) + np.sin(2 * np.pi * 7.3 * t_chunk_arr)) * 150000.0
+                thermal_noise = np.random.uniform(-150000.0, 150000.0, extracted_chunk.shape)
+                
+                baseline_noise = mains_hum + fan_noise + turbulence + thermal_noise
                 
                 # Apply room distortion / noise gain
                 noise = baseline_noise * self.gain
