@@ -111,14 +111,27 @@ void UDPServer::processAndForwardJitterBuffers() {
         std::this_thread::sleep_for(std::chrono::milliseconds(2));
         
         if (forward_socket_fd_ >= 0) {
-            std::lock_guard<std::mutex> lock(jb_mutex_);
-            for (auto& pair : jitter_buffers_) {
-                const std::string& ip_address = pair.first;
-                JitterBuffer& jb = pair.second;
+                std::vector<std::pair<std::string, AudioPacket>> packets_to_process;
                 
-                AudioPacket out_packet;
-                // Pop as many packets as are ready (to catch up if needed)
-                while (jb.pop(out_packet)) {
+                {
+                    std::lock_guard<std::mutex> lock(jb_mutex_);
+                    for (auto& pair : jitter_buffers_) {
+                        const std::string& ip_address = pair.first;
+                        JitterBuffer& jb = pair.second;
+                        
+                        AudioPacket out_packet;
+                        // Pop as many packets as are ready
+                        while (jb.pop(out_packet)) {
+                            packets_to_process.push_back({ip_address, out_packet});
+                        }
+                    }
+                }
+                
+                // Process packets without holding the mutex
+                for (auto& item : packets_to_process) {
+                    const std::string& ip_address = item.first;
+                    AudioPacket& out_packet = item.second;
+                    
                     node_manager_.processPacket(ip_address, &out_packet, sizeof(AudioPacket));
 
                     char forward_buf[2048];
@@ -131,7 +144,6 @@ void UDPServer::processAndForwardJitterBuffers() {
                     sendto(forward_socket_fd_, forward_buf, 16 + packet_size, 0,
                            (struct sockaddr *)&forward_addr_, sizeof(forward_addr_));
                 }
-            }
         }
     }
 }

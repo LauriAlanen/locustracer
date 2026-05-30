@@ -7,7 +7,6 @@ import logging
 import math
 import random
 import numpy as np
-import pyroomacoustics as pra
 from aiohttp import web
 import websockets
 
@@ -140,6 +139,9 @@ class DigitalTwinServer:
         t_sim = 0.0
         center = [2.0, 1.75]
         
+        max_history = int(self.fs * 0.1)  # 100ms
+        history_buffer = np.zeros(max_history, dtype=np.float64)
+        
         while self.active:
             loop_start = time.time()
             
@@ -147,37 +149,44 @@ class DigitalTwinServer:
             src_x = center[0] + self.source_radius * math.cos(self.source_speed * t_sim)
             src_y = center[1] + self.source_radius * math.sin(self.source_speed * t_sim)
             
-            # 2. Setup room for this chunk
-            room = pra.ShoeBox(self.room_dim, fs=self.fs, max_order=2, materials=pra.Material(0.2))
-            room.add_microphone_array(self.mics)
+            if self.seq_id % 8 == 0:
+                print(f"True Source Location: ({src_x:.4f}, {src_y:.4f})", flush=True)
+
+            # 2. Generate new audio chunk (unscaled)
+            # Use broadband white noise instead of a 440Hz sine wave to prevent GCC-PHAT spatial aliasing
+            chunk_signal = np.random.uniform(-1.0, 1.0, self.chunk_samples)
             
-            # 3. Generate audio chunk
-            t_chunk = np.arange(self.chunk_samples) / self.fs + t_sim
-            chunk_signal = np.sin(2 * np.pi * 440 * t_chunk) * (0.5 + 0.5 * np.sin(2 * np.pi * 10 * t_chunk))
-            
-            # Make sure to scale it up so it's visible as int32
-            # Increase scaling to ~300,000,000 so the UI dBFS calculates around 60dB
-            chunk_signal = chunk_signal * self.gain
-            
-            room.add_source([src_x, src_y], signal=chunk_signal)
-            
-            # 4. Simulate
-            try:
-                room.simulate()
-            except Exception as e:
-                logger.error(f"Simulation error: {e}")
-                await asyncio.sleep(0.01)
-                continue
-                
-            sim_out = room.mic_array.signals
+            # Append to history buffer and trim
+            history_buffer = np.concatenate((history_buffer, chunk_signal))[-max_history:]
             
             out_chunk = np.zeros((4, self.chunk_samples), dtype=np.int32)
-            valid_len = min(self.chunk_samples, sim_out.shape[1])
-            out_chunk[:, :valid_len] = sim_out[:, :valid_len].astype(np.int32)
             
-            # Inject realistic independent microphone self-noise (approx -40dB relative to the 300M signal peak)
-            noise = np.random.uniform(-self.noise_amplitude, self.noise_amplitude, out_chunk.shape)
-            out_chunk = np.clip(out_chunk + noise, -2147483648, 2147483647).astype(np.int32)
+            # Calculate distance and delay for each mic
+            for i in range(4):
+                mic_x = self.mics[0, i]
+                mic_y = self.mics[1, i]
+                
+                d = math.sqrt((src_x - mic_x)**2 + (src_y - mic_y)**2)
+                delay_samples = int((d / 343.0) * self.fs)
+                
+                start_idx = len(history_buffer) - self.chunk_samples - delay_samples
+                end_idx = len(history_buffer) - delay_samples
+                
+                if start_idx < 0:
+                    pad_len = -start_idx
+                    valid_data = history_buffer[0:end_idx]
+                    extracted_chunk = np.concatenate((np.zeros(pad_len), valid_data))
+                else:
+                    extracted_chunk = history_buffer[start_idx:end_idx]
+                    
+                # Attenuate and apply gain
+                extracted_chunk = extracted_chunk * (1.0 / max(d, 0.1)) * self.gain
+                
+                # Add noise
+                noise = np.random.uniform(-self.noise_amplitude, self.noise_amplitude, extracted_chunk.shape)
+                extracted_chunk = np.clip(extracted_chunk + noise, -2147483648, 2147483647)
+                
+                out_chunk[i] = extracted_chunk.astype(np.int32)
             
             # 5. Pack and send UDP packets
             ideal_tsf = int(self.seq_id * (256 * 1_000_000 / self.fs))

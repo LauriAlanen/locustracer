@@ -99,7 +99,22 @@ sequenceDiagram
     loop Every 16.6ms (~60FPS)
         Node->>UI: WS Broadcast (Audio Arrays & TSF Variance)
     end
+    end
 ```
+
+## C++ Backend TDOA Pipeline
+
+The real-time sound source localization is achieved using a robust Time Difference of Arrival (TDOA) pipeline natively executed within the C++ Server. 
+
+### Audio Synchronization and Jitter Buffer Routing
+To prevent sample drift and ensure perfect time-alignment across streams, the TDOA pipeline is routed directly through the UDP Server's `JitterBuffer`. The incoming packets from either the physical hardware nodes or the Digital Twin are ingested via UDP, and the `AudioSynchronizer` applies a Phase-Locked Loop (PLL) to smooth out hardware TSF clock jitter. By buffering and perfectly aligning the 48kHz audio streams, the pipeline avoids cross-correlation drift.
+
+### Localization Engine (GCC-PHAT & Gauss-Newton)
+Once the multi-channel streams are aligned, the pipeline processes the data through two primary mathematical stages:
+1. **GCC-PHAT Cross-Correlation**: The Generalized Cross-Correlation with Phase Transform (GCC-PHAT) is computed for each pair of microphones against a designated reference node. This calculates the precise time-delay (`tau`) between the arriving audio signals.
+2. **Gauss-Newton Optimization**: The resulting delay measurements are passed into a non-linear `PositionSolver`. The solver utilizes Gauss-Newton optimization to iteratively minimize the error between the expected time delays (based on current position guesses) and the measured time delays. It continues iterating until it converges on the highly precise X, Y spatial coordinates of the sound source.
+
+This pure mathematical approach successfully tracks dynamic acoustic events, such as an orbiting white noise source, with high accuracy in real-time.
 
 ## Digital Twin Simulation
 

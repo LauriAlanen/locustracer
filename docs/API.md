@@ -80,7 +80,7 @@ This document describes the REST endpoints and WebSocket payloads used by the Lo
 - **Response**: `{"status": "success", "current_config": { ... }}`
 
 ### `GET /position`
-**Description**: Retrieves the real-time calculated X, Y position of the acoustic source from the TDOA pipeline.
+**Description**: Retrieves the real-time calculated X, Y position of the acoustic source from the C++ Backend TDOA pipeline (computed via GCC-PHAT and Gauss-Newton solvers).
 - **Response**:
   ```json
   {
