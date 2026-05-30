@@ -186,6 +186,66 @@ app.get('/simulation/status', (req, res) => {
     res.json({ active: isSimulationActive });
 });
 
+app.get('/simulation/config', (req, res) => {
+    const options = {
+        hostname: '127.0.0.1',
+        port: 8010,
+        path: '/config',
+        method: 'GET'
+    };
+
+    const proxyReq = http.request(options, (proxyRes) => {
+        res.status(proxyRes.statusCode);
+        proxyRes.pipe(res);
+    });
+
+    proxyReq.on('error', (e) => {
+        console.error("Twin container is not running or failed to respond to config GET:", e.message);
+        res.status(503).json({ error: 'Simulation offline or unreachable' });
+    });
+
+    proxyReq.end();
+});
+
+app.post('/simulation/config', (req, res) => {
+    const postData = JSON.stringify(req.body);
+    const options = {
+        hostname: '127.0.0.1',
+        port: 8010,
+        path: '/config',
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(postData)
+        }
+    };
+
+    const proxyReq = http.request(options, (proxyRes) => {
+        let responseData = '';
+        proxyRes.on('data', chunk => { responseData += chunk; });
+        proxyRes.on('end', () => {
+            res.status(proxyRes.statusCode).send(responseData);
+            
+            if (proxyRes.statusCode >= 200 && proxyRes.statusCode < 300) {
+                const msg = JSON.stringify({ type: 'SIMULATION_CONFIG_UPDATED' });
+                uiConnections.forEach(client => {
+                    if (client.readyState === 1) { // 1 = WebSocket.OPEN
+                        client.send(msg);
+                    }
+                });
+            }
+        });
+    });
+
+    proxyReq.on('error', (e) => {
+        console.error("Twin container is not running or failed to respond to config POST:", e.message);
+        res.status(503).json({ error: 'Simulation offline or unreachable' });
+    });
+
+    proxyReq.write(postData);
+    proxyReq.end();
+});
+
 app.post('/simulation/toggle', (req, res) => {
     const { active } = req.body;
     if (typeof active !== 'boolean') {

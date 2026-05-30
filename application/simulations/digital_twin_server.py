@@ -50,6 +50,13 @@ class DigitalTwinServer:
         self.ws_server_url = 'ws://127.0.0.1:8009/ws'
         self.seq_id = 0
 
+        # Dynamic Configuration
+        self.gain = 300000000.0
+        self.noise_amplitude = 3000000.0
+        self.max_jitter_us = 200
+        self.source_speed = 2.0
+        self.source_radius = 0.8
+
     async def handle_toggle(self, request):
         try:
             data = await request.json()
@@ -71,6 +78,33 @@ class DigitalTwinServer:
             return web.json_response({"status": "ok", "active": self.active})
         except Exception as e:
             logger.error(f"Error handling toggle: {e}")
+            return web.json_response({"status": "error", "message": str(e)}, status=400)
+
+    async def handle_get_config(self, request):
+        return web.json_response({
+            "gain": self.gain,
+            "noise_amplitude": self.noise_amplitude,
+            "max_jitter_us": self.max_jitter_us,
+            "source_speed": self.source_speed,
+            "source_radius": self.source_radius
+        })
+
+    async def handle_post_config(self, request):
+        try:
+            data = await request.json()
+            if 'gain' in data:
+                self.gain = float(data['gain'])
+            if 'noise_amplitude' in data:
+                self.noise_amplitude = float(data['noise_amplitude'])
+            if 'max_jitter_us' in data:
+                self.max_jitter_us = int(data['max_jitter_us'])
+            if 'source_speed' in data:
+                self.source_speed = float(data['source_speed'])
+            if 'source_radius' in data:
+                self.source_radius = float(data['source_radius'])
+            return web.json_response({"status": "ok"})
+        except Exception as e:
+            logger.error(f"Error handling config update: {e}")
             return web.json_response({"status": "error", "message": str(e)}, status=400)
 
     def start_telemetry(self):
@@ -104,16 +138,14 @@ class DigitalTwinServer:
 
     async def simulation_loop(self):
         t_sim = 0.0
-        radius = 0.8
         center = [2.0, 1.75]
-        speed = 2.0  # radians per second
         
         while self.active:
             loop_start = time.time()
             
             # 1. Update source position
-            src_x = center[0] + radius * math.cos(speed * t_sim)
-            src_y = center[1] + radius * math.sin(speed * t_sim)
+            src_x = center[0] + self.source_radius * math.cos(self.source_speed * t_sim)
+            src_y = center[1] + self.source_radius * math.sin(self.source_speed * t_sim)
             
             # 2. Setup room for this chunk
             room = pra.ShoeBox(self.room_dim, fs=self.fs, max_order=2, materials=pra.Material(0.2))
@@ -125,7 +157,7 @@ class DigitalTwinServer:
             
             # Make sure to scale it up so it's visible as int32
             # Increase scaling to ~300,000,000 so the UI dBFS calculates around 60dB
-            chunk_signal = chunk_signal * 300000000.0
+            chunk_signal = chunk_signal * self.gain
             
             room.add_source([src_x, src_y], signal=chunk_signal)
             
@@ -144,8 +176,7 @@ class DigitalTwinServer:
             out_chunk[:, :valid_len] = sim_out[:, :valid_len].astype(np.int32)
             
             # Inject realistic independent microphone self-noise (approx -40dB relative to the 300M signal peak)
-            noise_amplitude = 3000000.0
-            noise = np.random.uniform(-noise_amplitude, noise_amplitude, out_chunk.shape)
+            noise = np.random.uniform(-self.noise_amplitude, self.noise_amplitude, out_chunk.shape)
             out_chunk = np.clip(out_chunk + noise, -2147483648, 2147483647).astype(np.int32)
             
             # 5. Pack and send UDP packets
@@ -153,7 +184,7 @@ class DigitalTwinServer:
             
             for i, sock in enumerate(self.udp_sockets):
                 # Calculate independent jitter for each mock hardware clock
-                jitter = random.randint(-200, 200)
+                jitter = random.randint(-self.max_jitter_us, self.max_jitter_us)
                 tsf_time = max(0, ideal_tsf + jitter)
                 
                 samples = out_chunk[i].tolist()
@@ -178,4 +209,6 @@ if __name__ == '__main__':
     server = DigitalTwinServer()
     app = web.Application()
     app.router.add_post('/toggle', server.handle_toggle)
+    app.router.add_get('/config', server.handle_get_config)
+    app.router.add_post('/config', server.handle_post_config)
     web.run_app(app, port=8010)
