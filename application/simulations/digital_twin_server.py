@@ -27,8 +27,8 @@ class DigitalTwinServer:
         
         # 4 microphones at the corners
         self.mics = np.array([
-            [0.05, 3.95, 3.95, 0.05], # x
-            [0.05, 0.05, 3.45, 3.45]  # y
+            [0.0, 4.0, 0.0, 4.0], # x for .2, .3, .4, .5
+            [0.0, 0.0, 3.5, 3.5]  # y
         ])
         
         # Target node IPs

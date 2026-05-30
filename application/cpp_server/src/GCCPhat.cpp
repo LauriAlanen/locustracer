@@ -132,6 +132,8 @@ double GCCPhat::computeTDOA(const std::vector<float>& sig1, const std::vector<fl
         sample_delay = peak_idx;
     }
 
-    // A positive sample_delay here means sig2 is DELAYED relative to sig1
-    return sample_delay / static_cast<double>(sample_rate);
+    // Invert the sign: if sig2 is delayed relative to sig1, the peak of 
+    // IFFT( FFT(sig1) * conj(FFT(sig2)) ) is at a negative tau.
+    // We want to return a POSITIVE time delay when sig2 is delayed.
+    return -sample_delay / static_cast<double>(sample_rate);
 }
