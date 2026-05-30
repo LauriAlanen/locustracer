@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - master
+      - experiemental/pyroomacoustics
 
 permissions:
   contents: write

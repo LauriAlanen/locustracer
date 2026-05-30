@@ -58,6 +58,9 @@ flowchart TD
     
     BackendHTTP -- "WS State / Stats (~60FPS)" --> ReactUI
     ReactUI -- "UI Actions (Beep/Identify)" --> BackendHTTP
+    ReactUI -- "Simulation Config & Toggle" --> BackendHTTP
+    BackendHTTP -- "Proxies Config (Port 8010)" --> TwinContainer
+    BackendHTTP -- "Auto-Configures Nodes (UDP 5011)" --> CPPServer
 ```
 
 ## UDP Audio Data Paths
@@ -108,6 +111,10 @@ The system includes a Python-based Digital Twin built with Pyroomacoustics (`app
 - **Sensor Noise Modeling**: A **-40dB** white noise floor is continuously injected into the virtual microphones to accurately simulate the characteristics of physical MEMS sensors.
 - **Clock Drift Emulation**: To simulate independent hardware clock inaccuracies, the simulation injects **±200µs** of independent random jitter into the TSF timestamps for each virtual node.
 
+### Dynamic Control and Auto-Configuration
+- **Dynamic Configuration**: The React frontend provides a **Simulation Config** pane with auto-saving sliders to dynamically adjust parameters like `gain`, `noise_amplitude`, `max_jitter_us`, `source_speed`, and `source_radius`. The Node.js Express server proxies these API calls directly to the Python Digital Twin on port `8010`.
+- **Auto-Configuration**: When the simulation is activated via the UI, the Node.js backend automatically overrides the active physical node mapping. It populates `POST /nodes/config` with the simulation IPs (`127.0.0.2` - `127.0.0.5`), mapping them to the corners of the 4.0m x 3.5m simulated room. This layout is immediately forwarded to the C++ server via UDP port `5011`.
+
 ## 3D Room Visualization and Spatial Mapping
 
 To enable accurate monitoring and intuitive debugging of real-time acoustic events, the frontend includes a high-fidelity visualizer that models the physical deployment environment.
@@ -133,6 +140,7 @@ To enable accurate monitoring and intuitive debugging of real-time acoustic even
 
 - **Interactive UI Controls**
   Users can customize their view in real-time using simple dashboard toggles:
+  - **TDOA Engine Toggle**: Switches the visualizer's localization logic between the highly accurate backend **C++ GCC-PHAT** algorithm and the lightweight **Frontend RMS** estimation engine.
   - **Axes Indicators**: Show or hide 3D spatial coordinate axes helper (X, Y, Z).
   - **Floor Grids**: Toggle floor grid overlays for precise spatial estimation.
   - **Room Info**: Toggle context overlays showing physical room metrics and active system configurations.
