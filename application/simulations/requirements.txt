@@ -1,0 +1,5 @@
+pyroomacoustics
+numpy
+matplotlib
+scipy
+PyQt5

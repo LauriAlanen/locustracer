@@ -178,6 +178,51 @@ app.post('/nodes/config', (req, res) => {
 });
 
 // ----------------------------------------------------
+// Simulation Mode Endpoints
+// ----------------------------------------------------
+let isSimulationActive = false;
+
+app.get('/simulation/status', (req, res) => {
+    res.json({ active: isSimulationActive });
+});
+
+app.post('/simulation/toggle', (req, res) => {
+    const { active } = req.body;
+    if (typeof active !== 'boolean') {
+        return res.status(400).json({ error: "active boolean is required" });
+    }
+    isSimulationActive = active;
+
+    // Forward to digital twin container
+    const postData = JSON.stringify({ active });
+    const options = {
+        hostname: '127.0.0.1',
+        port: 8010,
+        path: '/toggle',
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(postData)
+        }
+    };
+
+    const reqPost = http.request(options, (resPost) => {
+        if (resPost.statusCode !== 200) {
+            console.error(`Twin container returned ${resPost.statusCode}`);
+        }
+    });
+
+    reqPost.on('error', (e) => {
+        console.error("Twin container is not running or failed to respond:", e.message);
+    });
+
+    reqPost.write(postData);
+    reqPost.end();
+
+    res.json({ status: 'success', active: isSimulationActive });
+});
+
+// ----------------------------------------------------
 // UDP Listener (Receives from cpp_server on 5008)
 // ----------------------------------------------------
 const udpServer = dgram.createSocket('udp4');

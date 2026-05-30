@@ -14,3 +14,11 @@ services:
       - NODE_ENV=production
       - NO_FRONTEND=${NO_FRONTEND:-false}
     restart: unless-stopped
+
+  digital_twin:
+    build:
+      context: ./application/simulations
+      dockerfile: Dockerfile.sim
+    container_name: digital_twin_server
+    network_mode: "host"
+    restart: unless-stopped

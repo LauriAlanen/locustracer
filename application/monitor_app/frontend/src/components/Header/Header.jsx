@@ -6,6 +6,41 @@ export function Header({ wsStatus, masterNodeId, onBeep, onSetVolume }) {
     const [justBeeped, setJustBeeped] = useState(false);
     const [volume, setVolume] = useState(10); // default
     const [buzzMode, setBuzzMode] = useState('pitch');
+    const [simulationActive, setSimulationActive] = useState(false);
+
+    React.useEffect(() => {
+        const fetchStatus = async () => {
+            try {
+                const res = await fetch('http://127.0.0.1:8009/simulation/status');
+                if (res.ok) {
+                    const data = await res.json();
+                    setSimulationActive(data.active);
+                }
+            } catch (err) {
+                console.error("Failed to fetch simulation status:", err);
+            }
+        };
+        fetchStatus();
+    }, []);
+
+    const handleToggleSimulation = async () => {
+        const newActive = !simulationActive;
+        setSimulationActive(newActive); // Optimistic update
+        try {
+            const res = await fetch('http://127.0.0.1:8009/simulation/toggle', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ active: newActive })
+            });
+            if (!res.ok) {
+                // Revert if failed
+                setSimulationActive(!newActive);
+            }
+        } catch (err) {
+            console.error("Failed to toggle simulation:", err);
+            setSimulationActive(!newActive);
+        }
+    };
 
     const handleBeep = () => {
         if (!masterNodeId) {
@@ -71,6 +106,10 @@ export function Header({ wsStatus, masterNodeId, onBeep, onSetVolume }) {
                 ) : null}
 
                 <div className={styles.statusIndicators}>
+                    <div className={styles.statusPill} style={{ cursor: 'pointer' }} onClick={handleToggleSimulation}>
+                        <div className={`${styles.dot} ${simulationActive ? styles.pulseGreen : styles.pulseRed}`}></div>
+                        <span>{simulationActive ? 'Simulation: ON' : 'Simulation: OFF'}</span>
+                    </div>
                     <div className={styles.statusPill}>
                         <div className={`${styles.dot} ${wsStatus === 'connected' ? styles.pulseGreen : styles.pulseRed}`}></div>
                         <span>{wsStatus === 'connected' ? 'Stream Connected' : 'Stream Disconnected'}</span>

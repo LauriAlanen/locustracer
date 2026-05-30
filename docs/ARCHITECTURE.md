@@ -3,9 +3,10 @@
 This document outlines the architecture of the Locustracer system, detailing the interactions between the Firmware, C++ Server, and Node.js components.
 
 ## Overview
-The system relies on a Master/Listener node topology:
+The system relies on a Master/Listener node topology, which can also be simulated via a Digital Twin:
 - **Master Node (e.g. S2 Mini)**: Has Temperature/Humidity sensors, a Buzzer, and acts as the central timekeeper.
 - **Listener Node (e.g. XIAO ESP32S3, DevKitC)**: Has I2S Microphones to capture audio.
+- **Digital Twin (Docker)**: A Pyroomacoustics container that simulates acoustic environments and virtual listener nodes.
 
 The data flow spans across:
 1. **UDP Audio Path (High Frequency)**: Audio packets are sent from Listener nodes via UDP to the C++ Server, jitter-buffered, and forwarded to the Node.js backend.
@@ -19,6 +20,11 @@ flowchart TD
     subgraph Firmware["Firmware (ESP32)"]
         MasterNode["Master Node\n(SHTC3, Buzzer)"]
         ListenerNode["Listener Node\n(I2S Mic)"]
+    end
+
+    %% Digital Twin
+    subgraph Simulation["Simulation"]
+        TwinContainer["Digital Twin\n(Pyroomacoustics)"]
     end
 
     %% C++ Server
@@ -38,6 +44,7 @@ flowchart TD
 
     %% Audio Data Flow (UDP)
     ListenerNode -- "Audio UDP Packet\n(SeqID, TSF, Samples)" --> UDPServer
+    TwinContainer -- "Mock Audio UDP Packet" --> UDPServer
     UDPServer -- "Pushes Packets" --> JitterBuffer
     JitterBuffer -- "Forwarded Aligned Packets" --> BackendUDP
     BackendUDP -- "Streams Audio Arrays (~60FPS)" --> ReactUI
@@ -45,6 +52,7 @@ flowchart TD
     %% Telemetry & Config Flow (WebSockets & REST)
     MasterNode -- "WS Telemetry (Temp/Hum)" --> BackendHTTP
     ListenerNode -- "WS Telemetry (CPU)" --> BackendHTTP
+    TwinContainer -- "WS Mock Telemetry" --> BackendHTTP
     BackendHTTP -- "WS Config / Commands" --> MasterNode
     BackendHTTP -- "WS Config / Commands" --> ListenerNode
     
@@ -53,15 +61,15 @@ flowchart TD
 ```
 
 ## UDP Audio Data Paths
-1. The **Firmware Listener Nodes** capture audio at 48KHz using I2S and package 256 samples per packet.
+1. The **Firmware Listener Nodes** (or the **Digital Twin Container**) capture audio at 48KHz using I2S (or simulate it) and package 256 samples per packet.
 2. The packet (with a Sequence ID and filtered TSF time) is sent to the **C++ Server** on UDP port `5006`.
 3. The **C++ Server** uses a `JitterBuffer` to reorder packets, mitigate network jitter, and drop delayed packets. It forwards aligned stream chunks to the Node.js Backend over `127.0.0.1:5008`.
 4. The **Node.js UDP Listener** updates system statistics (drift, packet loss, bandwidth) and buffers the audio. It broadcasts these arrays at ~60FPS to the connected React UI clients over WebSockets.
 
 ## Telemetry Flow
-- Every ESP32 node runs an `api_client` task that connects via WebSocket (`/ws`) to the Node.js backend.
+- Every ESP32 node runs an `api_client` task that connects via WebSocket (`/ws`) to the Node.js backend. Similarly, the **Digital Twin** container establishes a WebSocket connection for its simulated nodes.
 - Nodes send JSON telemetry including `node_id`, `node_type`, `temperature`, `humidity`, and `cpu_temp` every 5 seconds.
-- The Node.js backend sends down configurations (like `buzzer_volume` or commands like `buzzer_mode`).
+- The Node.js backend sends down configurations (like `buzzer_volume` or commands like `buzzer_mode`). The Digital Twin container also listens to toggles and updates over REST/WebSockets.
 
 ## Sequence Diagram: TSF Sync and Audio Transmission
 
@@ -89,6 +97,16 @@ sequenceDiagram
         Node->>UI: WS Broadcast (Audio Arrays & TSF Variance)
     end
 ```
+
+## Digital Twin Simulation
+
+The system includes a Python-based Digital Twin built with Pyroomacoustics (`application/simulations/digital_twin_server.py`) that acts as a virtual drop-in replacement for the physical hardware nodes.
+
+### Simulation Physics and Specifications
+- **Simulated Environment**: Models a room precisely sized at **4.0m x 3.5m**.
+- **Sample Rate**: The simulation engine operates at **48,000Hz**, perfectly matching the ESP32 hardware I2S capture frequency for seamless C++ server compatibility.
+- **Sensor Noise Modeling**: A **-40dB** white noise floor is continuously injected into the virtual microphones to accurately simulate the characteristics of physical MEMS sensors.
+- **Clock Drift Emulation**: To simulate independent hardware clock inaccuracies, the simulation injects **±200µs** of independent random jitter into the TSF timestamps for each virtual node.
 
 ## 3D Room Visualization and Spatial Mapping
 

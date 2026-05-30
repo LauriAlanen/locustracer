@@ -1,0 +1,15 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    python3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements_sim.txt .
+RUN pip install --no-cache-dir -r requirements_sim.txt
+
+COPY digital_twin_server.py .
+
+CMD ["python", "digital_twin_server.py"]

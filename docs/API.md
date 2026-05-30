@@ -89,6 +89,25 @@ This document describes the REST endpoints and WebSocket payloads used by the Lo
   }
   ```
 
+### `GET /simulation/status`
+**Description**: Retrieves the active status of the Digital Twin simulation.
+- **Response**:
+  ```json
+  {
+    "active": true
+  }
+  ```
+
+### `POST /simulation/toggle`
+**Description**: Toggles the Digital Twin simulation on or off. The backend forwards this state to the `digital_twin` container.
+- **Request Body**:
+  ```json
+  {
+    "active": true
+  }
+  ```
+- **Response**: `{"status": "success"}` or forwarded response from the simulation container.
+
 ## WebSocket Payloads
 
 ### 1. ESP32 -> Node.js (`ws://.../ws`)
