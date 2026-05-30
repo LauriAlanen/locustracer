@@ -3,11 +3,11 @@ import { Settings } from 'lucide-react';
 
 export function SimulationConfigPane() {
     const [config, setConfig] = useState({
-        gain: 100000,
-        noise_amplitude: 0,
-        max_jitter_us: 0,
-        source_speed: 0.0,
-        source_radius: 1.0
+        volume: 300000000,
+        gain: 1.0,
+        max_jitter_us: 200,
+        source_speed: 2.0,
+        source_radius: 0.8
     });
 
     const [isLoading, setIsLoading] = useState(true);
@@ -79,36 +79,36 @@ export function SimulationConfigPane() {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                {/* Gain */}
+                {/* Volume */}
                 <div className="slider-group">
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                        <label>Gain</label>
-                        <span>{config.gain.toLocaleString()}</span>
+                        <label>Snap Volume</label>
+                        <span>{config.volume?.toLocaleString()}</span>
                     </div>
                     <input 
                         type="range" 
                         min="0" 
                         max="2000000000" 
-                        step="10000"
-                        value={config.gain}
-                        onChange={(e) => handleChange('gain', e.target.value)}
+                        step="100000"
+                        value={config.volume}
+                        onChange={(e) => handleChange('volume', e.target.value)}
                         style={{ width: '100%' }}
                     />
                 </div>
 
-                {/* Noise Amplitude */}
+                {/* Gain */}
                 <div className="slider-group">
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                        <label>Noise Amplitude</label>
-                        <span>{config.noise_amplitude.toLocaleString()}</span>
+                        <label>Room Gain (Distortion)</label>
+                        <span>{config.gain?.toLocaleString()}x</span>
                     </div>
                     <input 
                         type="range" 
                         min="0" 
-                        max="50000000" 
-                        step="10000"
-                        value={config.noise_amplitude}
-                        onChange={(e) => handleChange('noise_amplitude', e.target.value)}
+                        max="20.0" 
+                        step="0.1"
+                        value={config.gain}
+                        onChange={(e) => handleChange('gain', e.target.value)}
                         style={{ width: '100%' }}
                     />
                 </div>

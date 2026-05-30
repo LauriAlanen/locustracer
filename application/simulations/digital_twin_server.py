@@ -50,8 +50,8 @@ class DigitalTwinServer:
         self.seq_id = 0
 
         # Dynamic Configuration
-        self.gain = 300000000.0
-        self.noise_amplitude = 3000000.0
+        self.volume = 300000000.0
+        self.gain = 1.0
         self.max_jitter_us = 200
         self.source_speed = 2.0
         self.source_radius = 0.8
@@ -83,8 +83,8 @@ class DigitalTwinServer:
 
     async def handle_get_config(self, request):
         return web.json_response({
+            "volume": self.volume,
             "gain": self.gain,
-            "noise_amplitude": self.noise_amplitude,
             "max_jitter_us": self.max_jitter_us,
             "source_speed": self.source_speed,
             "source_radius": self.source_radius
@@ -93,16 +93,11 @@ class DigitalTwinServer:
     async def handle_post_config(self, request):
         try:
             data = await request.json()
-            if 'gain' in data:
-                self.gain = float(data['gain'])
-            if 'noise_amplitude' in data:
-                self.noise_amplitude = float(data['noise_amplitude'])
-            if 'max_jitter_us' in data:
-                self.max_jitter_us = int(data['max_jitter_us'])
-            if 'source_speed' in data:
-                self.source_speed = float(data['source_speed'])
-            if 'source_radius' in data:
-                self.source_radius = float(data['source_radius'])
+            if 'volume' in data: self.volume = float(data['volume'])
+            if 'gain' in data: self.gain = float(data['gain'])
+            if 'max_jitter_us' in data: self.max_jitter_us = int(data['max_jitter_us'])
+            if 'source_speed' in data: self.source_speed = float(data['source_speed'])
+            if 'source_radius' in data: self.source_radius = float(data['source_radius'])
             return web.json_response({"status": "ok"})
         except Exception as e:
             logger.error(f"Error handling config update: {e}")
@@ -202,11 +197,15 @@ class DigitalTwinServer:
                 else:
                     extracted_chunk = history_buffer[start_idx:end_idx]
                     
-                # Attenuate and apply gain
-                extracted_chunk = extracted_chunk * (1.0 / max(d, 0.1)) * self.gain
+                # Attenuate and apply snap volume
+                extracted_chunk = extracted_chunk * (1.0 / max(d, 0.1)) * self.volume
                 
-                # Add noise
-                noise = np.random.uniform(-self.noise_amplitude, self.noise_amplitude, extracted_chunk.shape)
+                # Baseline 50dB SPL room noise (assuming 120dB SPL is full 32-bit scale, 50dB is -70dB FS = ~676,000 amplitude)
+                baseline_noise = np.random.uniform(-676000.0, 676000.0, extracted_chunk.shape)
+                
+                # Apply room distortion / noise gain
+                noise = baseline_noise * self.gain
+                
                 extracted_chunk = np.clip(extracted_chunk + noise, -2147483648, 2147483647)
                 
                 out_chunk[i] = extracted_chunk.astype(np.int32)
