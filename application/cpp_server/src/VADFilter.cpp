@@ -30,8 +30,11 @@ bool VADFilter::process(PipelineContext& context) {
 
     static int frame_count = 0;
     if (++frame_count % 10 == 0) {
-        std::cout << "[Stage 2 - VAD] Calculated energy: " << max_energy 
-                  << " | Threshold: " << energy_threshold_ << std::endl;
+        static const bool verbose = (std::getenv("VERBOSE_LOGS") != nullptr && std::string(std::getenv("VERBOSE_LOGS")) == "1");
+        if (verbose) {
+            std::cout << "[Stage 2 - VAD] Calculated energy: " << max_energy 
+                      << " | Threshold: " << energy_threshold_ << std::endl;
+        }
     }
 
     if (max_energy > energy_threshold_) {

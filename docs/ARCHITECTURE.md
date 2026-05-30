@@ -114,7 +114,12 @@ Once the multi-channel streams are aligned, the pipeline processes the data thro
 1. **GCC-PHAT Cross-Correlation**: The Generalized Cross-Correlation with Phase Transform (GCC-PHAT) is computed for each pair of microphones against a designated reference node. This calculates the precise time-delay (`tau`) between the arriving audio signals.
 2. **Gauss-Newton Optimization**: The resulting delay measurements are passed into a non-linear `PositionSolver`. The solver utilizes Gauss-Newton optimization to iteratively minimize the error between the expected time delays (based on current position guesses) and the measured time delays. It continues iterating until it converges on the highly precise X, Y spatial coordinates of the sound source.
 
-This pure mathematical approach successfully tracks dynamic acoustic events, such as an orbiting white noise source, with high accuracy in real-time.
+This pure mathematical approach successfully tracks dynamic acoustic events, such as transient acoustic "snaps", with high accuracy in real-time.
+
+### C++ Server Logging
+To prevent excessive terminal spam while running the continuous GCC-PHAT engine at ~60 FPS, the C++ server suppresses frame-by-frame debug output by default. It only logs the final `[Position] Estimated Location:` when a sound event triggers the localization engine.
+
+If you are developing the tracking algorithm or need raw GCC-PHAT / TDOA matrices, you can enable verbose output by setting the `VERBOSE_LOGS=1` environment variable when running the system (e.g., within `docker-compose.yml`).
 
 ## Digital Twin Simulation
 
@@ -125,9 +130,10 @@ The system includes a Python-based Digital Twin built with Pyroomacoustics (`app
 - **Sample Rate**: The simulation engine operates at **48,000Hz**, perfectly matching the ESP32 hardware I2S capture frequency for seamless C++ server compatibility.
 - **Sensor Noise Modeling**: A **-40dB** white noise floor is continuously injected into the virtual microphones to accurately simulate the characteristics of physical MEMS sensors.
 - **Clock Drift Emulation**: To simulate independent hardware clock inaccuracies, the simulation injects **±200µs** of independent random jitter into the TSF timestamps for each virtual node.
+- **Transient Snapping Mode**: By default, the simulation operates in a "Transient Snapping" mode. It randomly teleports the virtual sound source within the room and plays a highly realistic acoustic "snap" (a short burst of exponentially decaying pink noise) every 1 to 3 seconds. This replaces the legacy continuous orbital movement mode.
 
 ### Dynamic Control and Auto-Configuration
-- **Dynamic Configuration**: The React frontend provides a **Simulation Config** pane with auto-saving sliders to dynamically adjust parameters like `gain`, `noise_amplitude`, `max_jitter_us`, `source_speed`, and `source_radius`. The Node.js Express server proxies these API calls directly to the Python Digital Twin on port `8010`.
+- **Dynamic Configuration**: The React frontend provides a **Simulation Config** pane with auto-saving sliders to dynamically adjust parameters like `gain` and `noise_amplitude` (legacy parameters `source_speed` and `source_radius` remain in the payload but are inactive). The Node.js Express server proxies these API calls directly to the Python Digital Twin on port `8010`.
 - **Auto-Configuration**: When the simulation is activated via the UI, the Node.js backend automatically overrides the active physical node mapping. It populates `POST /nodes/config` with the simulation IPs (`127.0.0.2` - `127.0.0.5`), mapping them to the corners of the 4.0m x 3.5m simulated room. This layout is immediately forwarded to the C++ server via UDP port `5011`.
 
 ## 3D Room Visualization and Spatial Mapping

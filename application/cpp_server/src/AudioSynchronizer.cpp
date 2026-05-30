@@ -104,12 +104,17 @@ void AudioSynchronizer::tryEmitFrame() {
         // Advance to next frame
         next_frame_start_idx_ += frame_size_;
 
-        std::cout << "[Stage 1 - Sync] Yielding frame. Target TSF: " << context.start_tsf 
-                  << " us. Node max sample indices: ";
-        for (const auto& pair : node_buffers_) {
-            std::cout << pair.first << ":" << pair.second.max_sample_index << " ";
+        static const bool verbose = (std::getenv("VERBOSE_LOGS") != nullptr && std::string(std::getenv("VERBOSE_LOGS")) == "1");
+        if (verbose) {
+            std::cout << "[Stage 1 - Sync] Yielding frame. Target TSF: " << context.start_tsf 
+                      << " us. Node max sample indices: ";
         }
-        std::cout << std::endl;
+        if (verbose) {
+            for (const auto& pair : node_buffers_) {
+                std::cout << pair.first << ":" << pair.second.max_sample_index << " ";
+            }
+        }
+        if (verbose) std::cout << std::endl;
 
         // Execute pipeline
         bool abort = false;

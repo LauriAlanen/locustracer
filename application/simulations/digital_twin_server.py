@@ -144,31 +144,40 @@ class DigitalTwinServer:
         max_history = int(self.fs * 0.1)  # 100ms
         history_buffer = np.zeros(max_history, dtype=np.float64)
         
+        last_snap_time = -10.0
+        next_snap_time = 0.0
+        src_x = 2.0
+        src_y = 1.75
+        
         while self.active:
             loop_start = time.time()
             
-            # 1. Update source position
-            src_x = center[0] + self.source_radius * math.cos(self.source_speed * t_sim)
-            src_y = center[1] + self.source_radius * math.sin(self.source_speed * t_sim)
-            
-            if self.seq_id % 8 == 0:
-                print(f"True Source Location: ({src_x:.4f}, {src_y:.4f})", flush=True)
+            # 1. Update source position (Teleport on snap)
+            if t_sim >= next_snap_time:
+                last_snap_time = t_sim
+                next_snap_time = t_sim + random.uniform(1.0, 3.0) # Snap every 1 to 3 seconds
+                # Teleport to a new random location inside the room
+                src_x = random.uniform(0.5, 3.5)
+                src_y = random.uniform(0.5, 3.0)
+                print(f"SNAP! New Source Location: ({src_x:.4f}, {src_y:.4f})", flush=True)
 
-            # 2. Generate new audio chunk (unscaled)
-            # Use a low-pass filtered white noise with a rhythmic amplitude envelope 
-            # to simulate a realistic locust buzzing sound, which looks much better on the UI charts.
-            raw_noise = np.random.uniform(-1.0, 1.0, self.chunk_samples)
-            chunk_signal = np.zeros(self.chunk_samples)
-            for i in range(self.chunk_samples):
-                self.filter_state = 0.85 * self.filter_state + 0.15 * raw_noise[i]
-                chunk_signal[i] = self.filter_state
-            
-            # Apply a 15Hz fast chirp modulated by a 1.5Hz slow breath
+            # 2. Generate new audio chunk
+            # We want to generate a short, sharp transient (like a finger snap)
             t_chunk = np.arange(self.chunk_samples) / self.fs + t_sim
-            fast_chirp = np.abs(np.sin(2 * np.pi * 15 * t_chunk)) ** 2
-            slow_breath = 0.3 + 0.7 * np.abs(np.sin(2 * np.pi * 1.5 * t_chunk))
             
-            chunk_signal = chunk_signal * fast_chirp * slow_breath
+            # Generate raw white noise
+            raw_noise = np.random.uniform(-1.0, 1.0, self.chunk_samples)
+            
+            # Apply an exponential decay envelope starting from last_snap_time
+            # If we are within 100ms of the snap, apply the envelope, otherwise it's silence
+            time_since_snap = t_chunk - last_snap_time
+            envelope = np.where(
+                (time_since_snap >= 0) & (time_since_snap < 0.1),
+                np.exp(-50.0 * time_since_snap), # Fast exponential decay
+                0.0
+            )
+            
+            chunk_signal = raw_noise * envelope
             
             # Append to history buffer and trim
             history_buffer = np.concatenate((history_buffer, chunk_signal))[-max_history:]

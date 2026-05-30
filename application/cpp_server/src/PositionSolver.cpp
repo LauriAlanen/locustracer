@@ -79,7 +79,10 @@ bool PositionSolver::process(PipelineContext& context) {
     }
     s /= node_positions_.size();
 
-    std::cout << "[Stage 4 - Solver] Initial guess s: (" << s.x() << ", " << s.y() << ")" << std::endl;
+    static const bool verbose = (std::getenv("VERBOSE_LOGS") != nullptr && std::string(std::getenv("VERBOSE_LOGS")) == "1");
+    if (verbose) {
+        std::cout << "[Stage 4 - Solver] Initial guess s: (" << s.x() << ", " << s.y() << ")" << std::endl;
+    }
 
     int max_iters = 20;
     double tolerance = 1e-6;
@@ -112,7 +115,9 @@ bool PositionSolver::process(PipelineContext& context) {
 
         s += delta;
 
-        std::cout << "[Stage 4 - Solver] Iter " << iter << " delta.norm(): " << delta.norm() << std::endl;
+        if (verbose) {
+            std::cout << "[Stage 4 - Solver] Iter " << iter << " delta.norm(): " << delta.norm() << std::endl;
+        }
 
         if (delta.norm() < tolerance) {
             break;

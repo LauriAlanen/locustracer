@@ -56,8 +56,11 @@ bool GCCPhat::process(PipelineContext& context) {
         
         double delay_in_ms = delay * 1000.0;
         double delay_in_samples = delay * context.sample_rate;
-        std::cout << "[GCC-PHAT] TDOA between " << pair.first << " and " << ref_ip 
-                  << ": " << delay_in_samples << " samples, " << delay_in_ms << " ms" << std::endl;
+        static const bool verbose = (std::getenv("VERBOSE_LOGS") != nullptr && std::string(std::getenv("VERBOSE_LOGS")) == "1");
+        if (verbose) {
+            std::cout << "[GCC-PHAT] TDOA between " << pair.first << " and " << ref_ip 
+                      << ": " << delay_in_samples << " samples, " << delay_in_ms << " ms" << std::endl;
+        }
     }
 
     return true; // Continue pipeline
