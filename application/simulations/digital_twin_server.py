@@ -55,6 +55,8 @@ class DigitalTwinServer:
         self.max_jitter_us = 200
         self.source_speed = 2.0
         self.source_radius = 0.8
+        
+        self.filter_state = 0.0
 
     async def handle_toggle(self, request):
         try:
@@ -153,8 +155,20 @@ class DigitalTwinServer:
                 print(f"True Source Location: ({src_x:.4f}, {src_y:.4f})", flush=True)
 
             # 2. Generate new audio chunk (unscaled)
-            # Use broadband white noise instead of a 440Hz sine wave to prevent GCC-PHAT spatial aliasing
-            chunk_signal = np.random.uniform(-1.0, 1.0, self.chunk_samples)
+            # Use a low-pass filtered white noise with a rhythmic amplitude envelope 
+            # to simulate a realistic locust buzzing sound, which looks much better on the UI charts.
+            raw_noise = np.random.uniform(-1.0, 1.0, self.chunk_samples)
+            chunk_signal = np.zeros(self.chunk_samples)
+            for i in range(self.chunk_samples):
+                self.filter_state = 0.85 * self.filter_state + 0.15 * raw_noise[i]
+                chunk_signal[i] = self.filter_state
+            
+            # Apply a 15Hz fast chirp modulated by a 1.5Hz slow breath
+            t_chunk = np.arange(self.chunk_samples) / self.fs + t_sim
+            fast_chirp = np.abs(np.sin(2 * np.pi * 15 * t_chunk)) ** 2
+            slow_breath = 0.3 + 0.7 * np.abs(np.sin(2 * np.pi * 1.5 * t_chunk))
+            
+            chunk_signal = chunk_signal * fast_chirp * slow_breath
             
             # Append to history buffer and trim
             history_buffer = np.concatenate((history_buffer, chunk_signal))[-max_history:]
