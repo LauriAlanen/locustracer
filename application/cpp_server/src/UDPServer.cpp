@@ -28,6 +28,16 @@ bool UDPServer::start() {
         std::cerr << "Warning: Failed to set SO_RCVBUF size." << std::endl;
     }
 
+    int opt = 1;
+    if (setsockopt(socket_fd_, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+        std::cerr << "Warning: Failed to set SO_REUSEADDR." << std::endl;
+    }
+#ifdef SO_REUSEPORT
+    if (setsockopt(socket_fd_, SOL_SOCKET, SO_REUSEPORT, &opt, sizeof(opt)) < 0) {
+        std::cerr << "Warning: Failed to set SO_REUSEPORT." << std::endl;
+    }
+#endif
+
     struct sockaddr_in server_addr;
     std::memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
