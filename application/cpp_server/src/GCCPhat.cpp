@@ -54,7 +54,13 @@ bool GCCPhat::process(PipelineContext& context) {
         // Also store reverse for convenience
         context.tdoa_results[{ref_ip, pair.first}] = -delay;
         
-        // std::cout << "[GCC-PHAT] TDOA between " << pair.first << " and " << ref_ip << ": " << delay * 1000.0 << " ms" << std::endl;
+        double delay_in_ms = delay * 1000.0;
+        double delay_in_samples = delay * context.sample_rate;
+        static const bool verbose = (std::getenv("VERBOSE_LOGS") != nullptr && std::string(std::getenv("VERBOSE_LOGS")) == "1");
+        if (verbose) {
+            std::cout << "[GCC-PHAT] TDOA between " << pair.first << " and " << ref_ip 
+                      << ": " << delay_in_samples << " samples, " << delay_in_ms << " ms" << std::endl;
+        }
     }
 
     return true; // Continue pipeline
@@ -126,6 +132,8 @@ double GCCPhat::computeTDOA(const std::vector<float>& sig1, const std::vector<fl
         sample_delay = peak_idx;
     }
 
-    // A positive sample_delay here means sig2 is DELAYED relative to sig1
-    return sample_delay / static_cast<double>(sample_rate);
+    // Invert the sign: if sig2 is delayed relative to sig1, the peak of 
+    // IFFT( FFT(sig1) * conj(FFT(sig2)) ) is at a negative tau.
+    // We want to return a POSITIVE time delay when sig2 is delayed.
+    return -sample_delay / static_cast<double>(sample_rate);
 }

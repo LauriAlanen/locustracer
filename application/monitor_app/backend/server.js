@@ -178,6 +178,129 @@ app.post('/nodes/config', (req, res) => {
 });
 
 // ----------------------------------------------------
+// Simulation Mode Endpoints
+// ----------------------------------------------------
+let isSimulationActive = false;
+
+app.get('/simulation/status', (req, res) => {
+    res.json({ active: isSimulationActive });
+});
+
+app.get('/simulation/config', (req, res) => {
+    const options = {
+        hostname: '127.0.0.1',
+        port: 8010,
+        path: '/config',
+        method: 'GET'
+    };
+
+    const proxyReq = http.request(options, (proxyRes) => {
+        res.status(proxyRes.statusCode);
+        proxyRes.pipe(res);
+    });
+
+    proxyReq.on('error', (e) => {
+        console.error("Twin container is not running or failed to respond to config GET:", e.message);
+        res.status(503).json({ error: 'Simulation offline or unreachable' });
+    });
+
+    proxyReq.end();
+});
+
+app.post('/simulation/config', (req, res) => {
+    const postData = JSON.stringify(req.body);
+    const options = {
+        hostname: '127.0.0.1',
+        port: 8010,
+        path: '/config',
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(postData)
+        }
+    };
+
+    const proxyReq = http.request(options, (proxyRes) => {
+        let responseData = '';
+        proxyRes.on('data', chunk => { responseData += chunk; });
+        proxyRes.on('end', () => {
+            res.status(proxyRes.statusCode).send(responseData);
+            
+            if (proxyRes.statusCode >= 200 && proxyRes.statusCode < 300) {
+                const msg = JSON.stringify({ type: 'SIMULATION_CONFIG_UPDATED' });
+                uiConnections.forEach(client => {
+                    if (client.readyState === 1) { // 1 = WebSocket.OPEN
+                        client.send(msg);
+                    }
+                });
+            }
+        });
+    });
+
+    proxyReq.on('error', (e) => {
+        console.error("Twin container is not running or failed to respond to config POST:", e.message);
+        res.status(503).json({ error: 'Simulation offline or unreachable' });
+    });
+
+    proxyReq.write(postData);
+    proxyReq.end();
+});
+
+app.post('/simulation/toggle', (req, res) => {
+    const { active } = req.body;
+    if (typeof active !== 'boolean') {
+        return res.status(400).json({ error: "active boolean is required" });
+    }
+    isSimulationActive = active;
+
+    // Forward to digital twin container
+    const postData = JSON.stringify({ active });
+    const options = {
+        hostname: '127.0.0.1',
+        port: 8010,
+        path: '/toggle',
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(postData)
+        }
+    };
+
+    const reqPost = http.request(options, (resPost) => {
+        if (resPost.statusCode !== 200) {
+            console.error(`Twin container returned ${resPost.statusCode}`);
+        } else if (active) {
+            // Auto-configure node positions for simulation
+            currentNodesConfig = {
+                nodes: [
+                    { ip: "127.0.0.2", x: 0, y: 0 },
+                    { ip: "127.0.0.3", x: 4.0, y: 0 },
+                    { ip: "127.0.0.4", x: 0, y: 3.5 },
+                    { ip: "127.0.0.5", x: 4.0, y: 3.5 }
+                ],
+                reference_node: "127.0.0.2"
+            };
+
+            const message = Buffer.from(JSON.stringify(currentNodesConfig));
+            const client = dgram.createSocket('udp4');
+            client.send(message, 5011, '127.0.0.1', (err) => {
+                if (err) console.error("Failed to forward simulation nodes config to C++ server:", err);
+                client.close();
+            });
+        }
+    });
+
+    reqPost.on('error', (e) => {
+        console.error("Twin container is not running or failed to respond:", e.message);
+    });
+
+    reqPost.write(postData);
+    reqPost.end();
+
+    res.json({ status: 'success', active: isSimulationActive });
+});
+
+// ----------------------------------------------------
 // UDP Listener (Receives from cpp_server on 5008)
 // ----------------------------------------------------
 const udpServer = dgram.createSocket('udp4');

@@ -9,7 +9,8 @@ import { SystemOverviewCard } from './components/Telemetry/SystemOverviewCard';
 import { LocationMapView } from './components/LocationMap/LocationMapView';
 import { useTelemetry } from './hooks/useTelemetry';
 import { useAudioWebSocket } from './hooks/useAudioWebSocket';
-import { Microchip, Activity, Layers, BarChart2, LayoutDashboard, Compass } from 'lucide-react';
+import { SimulationConfigPane } from './components/SimulationConfig/SimulationConfigPane';
+import { Microchip, Activity, Layers, BarChart2, LayoutDashboard, Compass, Settings } from 'lucide-react';
 
 function Navigation() {
     const location = useLocation();
@@ -63,6 +64,22 @@ function Navigation() {
             >
                 <BarChart2 size={18} /> Statistics
             </Link>
+            <Link 
+                to="/simulation" 
+                className={`nav-link ${location.pathname === '/simulation' ? 'active' : ''}`}
+                style={{
+                    padding: '0.5rem 1rem',
+                    color: location.pathname === '/simulation' ? '#fff' : 'rgba(255,255,255,0.6)',
+                    borderBottom: location.pathname === '/simulation' ? '2px solid #00f0ff' : 'none',
+                    textDecoration: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    fontWeight: 600
+                }}
+            >
+                <Settings size={18} /> Simulation Config
+            </Link>
         </nav>
     );
 }
@@ -112,6 +129,20 @@ function StatisticsView({ tsfDataRef }) {
     );
 }
 
+function SimulationConfigView() {
+    return (
+        <main>
+            <section className="section">
+                <div className="section-header" style={{ marginBottom: '2rem' }}>
+                    <h2><Settings size={24} /> Simulation Configuration</h2>
+                    <span className="subtitle">Adjust UDP simulation parameters in real-time</span>
+                </div>
+                <SimulationConfigPane />
+            </section>
+        </main>
+    );
+}
+
 function App() {
     const { telemetryData, masterNodeId } = useTelemetry();
     const { status: wsStatus, audioDataRef, tsfDataRef, positionDataRef, sendBeep, sendVolume, sendIdentify } = useAudioWebSocket();
@@ -154,6 +185,9 @@ function App() {
                         <StatisticsView 
                             tsfDataRef={tsfDataRef} 
                         />
+                    } />
+                    <Route path="/simulation" element={
+                        <SimulationConfigView />
                     } />
                 </Routes>
             </div>

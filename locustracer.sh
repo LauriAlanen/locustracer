@@ -55,6 +55,7 @@ cleanup() {
     echo "Stopping native services..."
     pkill -f "locustracer_server" || true
     pkill -f "node server.js" || true
+    pkill -f "digital_twin_server.py" || true
     pkill -f "vite" || true
     echo "All services stopped."
     exit
@@ -125,6 +126,14 @@ if [ "$COMMAND" == "start" ]; then
     # Register the cleanup function for EXIT, SIGINT, SIGTERM
     trap cleanup EXIT SIGINT SIGTERM
 
+    if [ "$CONTAINER_MODE" != "1" ]; then
+        echo "Cleaning up any old background instances..."
+        pkill -f "locustracer_server" || true
+        pkill -f "node server.js" || true
+        pkill -f "digital_twin_server.py" || true
+        pkill -f "vite" || true
+    fi
+
     if [ "$ONLY_FRONTEND_FLAG" != "1" ]; then
         echo "Starting Backend..."
         (
@@ -133,6 +142,21 @@ if [ "$COMMAND" == "start" ]; then
                 npm install --silent
             fi
             npm start
+        ) &
+
+        echo "Starting Digital Twin Simulator..."
+        (
+            if [ "$CONTAINER_MODE" != "1" ]; then
+                if [ ! -d ".venv" ]; then
+                    echo "Creating Python virtual environment in .venv..."
+                    python3 -m venv .venv
+                fi
+                source .venv/bin/activate
+                if [ -f "application/simulations/requirements_sim.txt" ]; then
+                    pip install -r application/simulations/requirements_sim.txt --quiet || true
+                fi
+            fi
+            python3 application/simulations/digital_twin_server.py
         ) &
     fi
 

@@ -13,4 +13,13 @@ services:
     environment:
       - NODE_ENV=production
       - NO_FRONTEND=${NO_FRONTEND:-false}
+      - VERBOSE_LOGS=${VERBOSE_LOGS:-0}
+    restart: unless-stopped
+
+  digital_twin:
+    build:
+      context: ./application/simulations
+      dockerfile: Dockerfile.sim
+    container_name: digital_twin_server
+    network_mode: "host"
     restart: unless-stopped

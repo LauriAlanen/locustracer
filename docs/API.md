@@ -80,7 +80,7 @@ This document describes the REST endpoints and WebSocket payloads used by the Lo
 - **Response**: `{"status": "success", "current_config": { ... }}`
 
 ### `GET /position`
-**Description**: Retrieves the real-time calculated X, Y position of the acoustic source from the TDOA pipeline.
+**Description**: Retrieves the real-time calculated X, Y position of the acoustic source from the C++ Backend TDOA pipeline (computed via GCC-PHAT and Gauss-Newton solvers).
 - **Response**:
   ```json
   {
@@ -88,6 +88,52 @@ This document describes the REST endpoints and WebSocket payloads used by the Lo
     "y": 0.82
   }
   ```
+
+### `GET /simulation/status`
+**Description**: Retrieves the active status of the Digital Twin simulation.
+- **Response**:
+  ```json
+  {
+    "active": true
+  }
+  ```
+
+### `POST /simulation/toggle`
+**Description**: Toggles the Digital Twin simulation on or off. When set to active, the Node.js server automatically populates `POST /nodes/config` (and thus `cpp_server` via UDP port 5011) with the simulation IPs (`127.0.0.2` - `127.0.0.5`) mapped to the 4.0m x 3.5m room corners. The backend forwards this state to the `digital_twin` process.
+- **Request Body**:
+  ```json
+  {
+    "active": true
+  }
+  ```
+- **Response**: `{"status": "success"}` or forwarded response from the simulation process.
+
+### `GET /simulation/config`
+**Description**: Retrieves the dynamic configuration of the Digital Twin simulation. The Express server proxies this request to the Python digital twin process on port 8010.
+- **Response**:
+  ```json
+  {
+    "gain": 1.0,
+    "noise_amplitude": 0.05,
+    "max_jitter_us": 200,
+    "source_speed": 1.5,
+    "source_radius": 1.0
+  }
+  ```
+
+### `POST /simulation/config`
+**Description**: Updates the dynamic configuration of the Digital Twin simulation. Proxies to the Python digital twin process.
+- **Request Body**:
+  ```json
+  {
+    "gain": 1.2,
+    "noise_amplitude": 0.08,
+    "max_jitter_us": 150,
+    "source_speed": 1.5,
+    "source_radius": 1.0
+  }
+  ```
+- **Response**: `{"status": "success"}` or forwarded response from the simulation process.
 
 ## WebSocket Payloads
 

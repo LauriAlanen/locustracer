@@ -47,6 +47,12 @@ void configListenerTask(std::shared_ptr<AudioSynchronizer> synchronizer, size_t 
         return;
     }
     
+    int opt = 1;
+    setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+#ifdef SO_REUSEPORT
+    setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, &opt, sizeof(opt));
+#endif
+    
     struct timeval tv;
     tv.tv_sec = 1;
     tv.tv_usec = 0;

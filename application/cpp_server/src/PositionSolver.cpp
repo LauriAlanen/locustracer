@@ -79,8 +79,13 @@ bool PositionSolver::process(PipelineContext& context) {
     }
     s /= node_positions_.size();
 
-    int max_iters = 20;
-    double tolerance = 1e-6;
+    static const bool verbose = (std::getenv("VERBOSE_LOGS") != nullptr && std::string(std::getenv("VERBOSE_LOGS")) == "1");
+    if (verbose) {
+        std::cout << "[Stage 4 - Solver] Initial guess s: (" << s.x() << ", " << s.y() << ")" << std::endl;
+    }
+
+    int max_iters = 100;
+    double tolerance = 1e-3; // 1mm tolerance is more than enough and prevents oscillation
 
     for (int iter = 0; iter < max_iters; ++iter) {
         double d1 = (s - p1).norm();
@@ -108,10 +113,25 @@ bool PositionSolver::process(PipelineContext& context) {
         // Using pseudo-inverse or robust solver for non-square J (if more than 3 nodes)
         Eigen::Vector2d delta = J.bdcSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(-f);
 
-        s += delta;
+        // Apply a dampening factor (learning rate) to prevent overshoot when the true 
+        // coordinate is far from the initial guess (e.g. random teleporting snaps)
+        s += 0.5 * delta;
+
+        // Soft clip to keep the solver inside or near the room
+        if (s.x() > 10.0) s.x() = 10.0;
+        if (s.x() < -10.0) s.x() = -10.0;
+        if (s.y() > 10.0) s.y() = 10.0;
+        if (s.y() < -10.0) s.y() = -10.0;
+
+        if (verbose) {
+            std::cout << "[Stage 4 - Solver] Iter " << iter << " delta.norm(): " << delta.norm() << std::endl;
+        }
 
         if (delta.norm() < tolerance) {
             break;
+        }
+        if (iter == max_iters - 1 && verbose) {
+            std::cout << "[Stage 4 - Solver] WARNING: Gauss-Newton hit max_iters (" << max_iters << ") without converging." << std::endl;
         }
     }
 

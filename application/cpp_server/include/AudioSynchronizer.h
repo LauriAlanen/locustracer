@@ -30,6 +30,8 @@ private:
     struct NodeBuffer {
         std::map<uint64_t, float> samples; // Absolute sample index -> value
         uint64_t max_sample_index = 0;
+        uint64_t expected_next_idx = 0;
+        bool has_first_packet = false;
     };
 
     std::unordered_map<std::string, NodeBuffer> node_buffers_;
