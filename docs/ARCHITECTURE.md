@@ -6,10 +6,10 @@ This document outlines the architecture of the Locustracer system, detailing the
 The system relies on a Master/Listener node topology, which can also be simulated via a Digital Twin:
 - **Master Node (e.g. S2 Mini)**: Has Temperature/Humidity sensors, a Buzzer, and acts as the central timekeeper.
 - **Listener Node (e.g. XIAO ESP32S3, DevKitC)**: Has I2S Microphones to capture audio.
-- **Digital Twin (Docker)**: A Pyroomacoustics container that simulates acoustic environments and virtual listener nodes.
+- **Digital Twin (Native Python)**: A Pyroomacoustics simulation that acts as virtual listener nodes and acoustic environments.
 
 The data flow spans across:
-1. **UDP Audio Path (High Frequency)**: Audio packets are sent from Listener nodes via UDP to the C++ Server, jitter-buffered, and forwarded to the Node.js backend.
+1. **UDP Audio Path (High Frequency)**: Audio packets are sent from Listener nodes via UDP to the C++ Server, jitter-buffered, and forwarded to the Node.js backend. The C++ UDP server (ports `5006`, `5011`) utilizes `SO_REUSEADDR` and `SO_REUSEPORT` for robust process restarts.
 2. **WebSocket Telemetry Flow (Low Frequency)**: ESP32 nodes connect directly to the Node.js backend to report telemetry and receive configuration/commands.
 
 ## Data Flow Diagram
@@ -24,7 +24,7 @@ flowchart TD
 
     %% Digital Twin
     subgraph Simulation["Simulation"]
-        TwinContainer["Digital Twin\n(Pyroomacoustics)"]
+        TwinProcess["Digital Twin\n(Pyroomacoustics)"]
     end
 
     %% C++ Server
@@ -44,7 +44,7 @@ flowchart TD
 
     %% Audio Data Flow (UDP)
     ListenerNode -- "Audio UDP Packet\n(SeqID, TSF, Samples)" --> UDPServer
-    TwinContainer -- "Mock Audio UDP Packet" --> UDPServer
+    TwinProcess -- "Mock Audio UDP Packet" --> UDPServer
     UDPServer -- "Pushes Packets" --> JitterBuffer
     JitterBuffer -- "Forwarded Aligned Packets" --> BackendUDP
     BackendUDP -- "Streams Audio Arrays (~60FPS)" --> ReactUI
@@ -52,27 +52,27 @@ flowchart TD
     %% Telemetry & Config Flow (WebSockets & REST)
     MasterNode -- "WS Telemetry (Temp/Hum)" --> BackendHTTP
     ListenerNode -- "WS Telemetry (CPU)" --> BackendHTTP
-    TwinContainer -- "WS Mock Telemetry" --> BackendHTTP
+    TwinProcess -- "WS Mock Telemetry" --> BackendHTTP
     BackendHTTP -- "WS Config / Commands" --> MasterNode
     BackendHTTP -- "WS Config / Commands" --> ListenerNode
     
     BackendHTTP -- "WS State / Stats (~60FPS)" --> ReactUI
     ReactUI -- "UI Actions (Beep/Identify)" --> BackendHTTP
     ReactUI -- "Simulation Config & Toggle" --> BackendHTTP
-    BackendHTTP -- "Proxies Config (Port 8010)" --> TwinContainer
+    BackendHTTP -- "Proxies Config (Port 8010)" --> TwinProcess
     BackendHTTP -- "Auto-Configures Nodes (UDP 5011)" --> CPPServer
 ```
 
 ## UDP Audio Data Paths
-1. The **Firmware Listener Nodes** (or the **Digital Twin Container**) capture audio at 48KHz using I2S (or simulate it) and package 256 samples per packet.
+1. The **Firmware Listener Nodes** (or the **Digital Twin Simulation**) capture audio at 48KHz using I2S (or simulate it) and package 256 samples per packet.
 2. The packet (with a Sequence ID and filtered TSF time) is sent to the **C++ Server** on UDP port `5006`.
 3. The **C++ Server** uses a `JitterBuffer` to reorder packets, mitigate network jitter, and drop delayed packets. It forwards aligned stream chunks to the Node.js Backend over `127.0.0.1:5008`.
 4. The **Node.js UDP Listener** updates system statistics (drift, packet loss, bandwidth) and buffers the audio. It broadcasts these arrays at ~60FPS to the connected React UI clients over WebSockets.
 
 ## Telemetry Flow
-- Every ESP32 node runs an `api_client` task that connects via WebSocket (`/ws`) to the Node.js backend. Similarly, the **Digital Twin** container establishes a WebSocket connection for its simulated nodes.
+- Every ESP32 node runs an `api_client` task that connects via WebSocket (`/ws`) to the Node.js backend. Similarly, the **Digital Twin** process establishes a WebSocket connection for its simulated nodes.
 - Nodes send JSON telemetry including `node_id`, `node_type`, `temperature`, `humidity`, and `cpu_temp` every 5 seconds.
-- The Node.js backend sends down configurations (like `buzzer_volume` or commands like `buzzer_mode`). The Digital Twin container also listens to toggles and updates over REST/WebSockets.
+- The Node.js backend sends down configurations (like `buzzer_volume` or commands like `buzzer_mode`). The Digital Twin process also listens to toggles and updates over REST/WebSockets.
 
 ## Sequence Diagram: TSF Sync and Audio Transmission
 
@@ -124,6 +124,11 @@ If you are developing the tracking algorithm or need raw GCC-PHAT / TDOA matrice
 ## Digital Twin Simulation
 
 The system includes a Python-based Digital Twin built with Pyroomacoustics (`application/simulations/digital_twin_server.py`) that acts as a virtual drop-in replacement for the physical hardware nodes.
+
+### Native Execution and Pre-start Cleanup
+The simulation is natively executed via the `./locustracer.sh start` script. During boot:
+- **Environment Management**: The script automatically checks for a Python virtual environment (`.venv`). If it is missing, it will create it and install all required dependencies from `application/simulations/requirements_sim.txt`.
+- **Pre-start Cleanup**: To prevent port collisions and ensure a clean boot state, `locustracer.sh start` preemptively kills any dangling native processes (e.g., old instances of `cpp_server`, `vite`, and `digital_twin_server.py`) before booting the services.
 
 ### Simulation Physics and Specifications
 - **Simulated Environment**: Models a room precisely sized at **4.0m x 3.5m**.

@@ -99,17 +99,17 @@ This document describes the REST endpoints and WebSocket payloads used by the Lo
   ```
 
 ### `POST /simulation/toggle`
-**Description**: Toggles the Digital Twin simulation on or off. When set to active, the Node.js server automatically populates `POST /nodes/config` (and thus `cpp_server` via UDP port 5011) with the simulation IPs (`127.0.0.2` - `127.0.0.5`) mapped to the 4.0m x 3.5m room corners. The backend forwards this state to the `digital_twin` container.
+**Description**: Toggles the Digital Twin simulation on or off. When set to active, the Node.js server automatically populates `POST /nodes/config` (and thus `cpp_server` via UDP port 5011) with the simulation IPs (`127.0.0.2` - `127.0.0.5`) mapped to the 4.0m x 3.5m room corners. The backend forwards this state to the `digital_twin` process.
 - **Request Body**:
   ```json
   {
     "active": true
   }
   ```
-- **Response**: `{"status": "success"}` or forwarded response from the simulation container.
+- **Response**: `{"status": "success"}` or forwarded response from the simulation process.
 
 ### `GET /simulation/config`
-**Description**: Retrieves the dynamic configuration of the Digital Twin simulation. The Express server proxies this request to the Python digital twin container on port 8010.
+**Description**: Retrieves the dynamic configuration of the Digital Twin simulation. The Express server proxies this request to the Python digital twin process on port 8010.
 - **Response**:
   ```json
   {
@@ -122,7 +122,7 @@ This document describes the REST endpoints and WebSocket payloads used by the Lo
   ```
 
 ### `POST /simulation/config`
-**Description**: Updates the dynamic configuration of the Digital Twin simulation. Proxies to the Python digital twin container.
+**Description**: Updates the dynamic configuration of the Digital Twin simulation. Proxies to the Python digital twin process.
 - **Request Body**:
   ```json
   {
@@ -133,7 +133,7 @@ This document describes the REST endpoints and WebSocket payloads used by the Lo
     "source_radius": 1.0
   }
   ```
-- **Response**: `{"status": "success"}` or forwarded response from the simulation container.
+- **Response**: `{"status": "success"}` or forwarded response from the simulation process.
 
 ## WebSocket Payloads
 
