@@ -179,6 +179,7 @@ function App() {
                             audioDataRef={audioDataRef} 
                             positionDataRef={positionDataRef}
                             masterNodeId={masterNodeId} 
+                            sendIdentify={sendIdentify}
                         />
                     } />
                     <Route path="/statistics" element={

@@ -205,5 +205,6 @@ Used to send commands from the UI to the nodes.
   "node_id": "192.168.1.11"
 }
 ```
+*(When a node is selected in the UI's position config, this action is sent repeatedly on an interval to make the physical node LED actively blink for visual identification. The UI also highlights this selected node in the 3D map.)*
 
 

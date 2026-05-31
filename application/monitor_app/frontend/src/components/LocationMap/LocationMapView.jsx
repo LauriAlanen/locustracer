@@ -7,7 +7,7 @@ import './LocationMap.css';
 
 const HOST = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8009`;
 
-export function LocationMapView({ telemetryData, audioDataRef, positionDataRef, masterNodeId }) {
+export function LocationMapView({ telemetryData, audioDataRef, positionDataRef, masterNodeId, sendIdentify }) {
     const [showAxes, setShowAxes] = useState(false);
     const [showGrid, setShowGrid] = useState(true);
     const [showInfo, setShowInfo] = useState(true);
@@ -15,6 +15,7 @@ export function LocationMapView({ telemetryData, audioDataRef, positionDataRef, 
     const [positionMode, setPositionMode] = useState('cpp');
     // nodeConfig: array of { ip, x, y, isReference } from NodePositionEditor after save
     const [nodeConfig, setNodeConfig] = useState([]);
+    const [selectedNodeId, setSelectedNodeId] = useState(null);
 
     // On mount, fetch stored node positions from the backend
     useEffect(() => {
@@ -30,6 +31,13 @@ export function LocationMapView({ telemetryData, audioDataRef, positionDataRef, 
             })
             .catch(() => {});
     }, []);
+
+    // Clear selected node when closing the editor
+    useEffect(() => {
+        if (!showNodeEditor) {
+            setSelectedNodeId(null);
+        }
+    }, [showNodeEditor]);
 
     const btnStyle = {
         padding: '6px 12px',
@@ -96,6 +104,9 @@ export function LocationMapView({ telemetryData, audioDataRef, positionDataRef, 
                     <NodePositionEditor
                         telemetryData={telemetryData}
                         onSaved={setNodeConfig}
+                        sendIdentify={sendIdentify}
+                        onSelectNode={setSelectedNodeId}
+                        selectedNodeId={selectedNodeId}
                     />
                 )}
 
@@ -111,6 +122,7 @@ export function LocationMapView({ telemetryData, audioDataRef, positionDataRef, 
                         nodeConfig={nodeConfig}
                         showCornerLabels={showNodeEditor}
                         positionMode={positionMode}
+                        selectedNodeId={selectedNodeId}
                     />
                 </div>
             </section>

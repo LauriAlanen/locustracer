@@ -60,21 +60,39 @@ function CornerLabel({ position, label, ip, isReference }) {
 
 const SMOOTHING = 0.85;
 
-function AudioNode({ id, position, type, audioDataRef, smoothedRmsRef, currentRms }) {
+function AudioNode({ id, position, type, audioDataRef, smoothedRmsRef, currentRms, isSelected }) {
     const meshRef = useRef();
     const materialRef = useRef();
 
-    useFrame(() => {
+    useFrame(({ clock }) => {
         const rms = currentRms[id] || 0;
 
         if (meshRef.current) {
-            const scale = 1 + rms * 1.5;
+            let scale = 1 + rms * 1.5;
+            if (isSelected) {
+                scale += Math.sin(clock.getElapsedTime() * 10) * 0.4;
+            }
             meshRef.current.scale.set(scale, scale, scale);
             meshRef.current.position.y = 0.86 + (Math.sin(Date.now() / 200 + position[0]) * rms * 0.5);
         }
 
         if (materialRef.current) {
-            materialRef.current.emissiveIntensity = 0.5 + rms * 3.0;
+            let intensity = 0.5 + rms * 3.0;
+            if (isSelected) {
+                intensity += (Math.sin(clock.getElapsedTime() * 10) + 1) * 2.0;
+            }
+            materialRef.current.emissiveIntensity = intensity;
+            
+            // Change color slightly when selected
+            if (isSelected) {
+                materialRef.current.color.set('#ffffff');
+                materialRef.current.emissive.set('#ffffff');
+            } else {
+                const isMaster = type === 'master';
+                const baseColor = isMaster ? '#00f0ff' : '#b400ff';
+                materialRef.current.color.set(baseColor);
+                materialRef.current.emissive.set(baseColor);
+            }
         }
     });
 
@@ -558,7 +576,7 @@ function ConferenceTable() {
     );
 }
 
-function Scene({ telemetryData, audioDataRef, positionDataRef, masterNodeId, showAxes, showGrid, showInfo, nodeConfig, showCornerLabels, positionMode }) {
+function Scene({ telemetryData, audioDataRef, positionDataRef, masterNodeId, showAxes, showGrid, showInfo, nodeConfig, showCornerLabels, positionMode, selectedNodeId }) {
     const smoothedRmsRef = useRef({});
     const [currentRms, setCurrentRms] = useState({});
     const [sourceTarget, setSourceTarget] = useState([0, 0.2, 0]);
@@ -746,6 +764,7 @@ function Scene({ telemetryData, audioDataRef, positionDataRef, masterNodeId, sho
                     audioDataRef={audioDataRef}
                     smoothedRmsRef={smoothedRmsRef}
                     currentRms={currentRms}
+                    isSelected={node.id === selectedNodeId}
                 />
             ))}
 
@@ -769,7 +788,7 @@ function Scene({ telemetryData, audioDataRef, positionDataRef, masterNodeId, sho
     );
 }
 
-export function AudioLocationMap({ telemetryData, audioDataRef, positionDataRef, masterNodeId, showAxes, showGrid, showInfo, nodeConfig, showCornerLabels, positionMode }) {
+export function AudioLocationMap({ telemetryData, audioDataRef, positionDataRef, masterNodeId, showAxes, showGrid, showInfo, nodeConfig, showCornerLabels, positionMode, selectedNodeId }) {
     const containerRef = useRef();
     const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -802,6 +821,7 @@ export function AudioLocationMap({ telemetryData, audioDataRef, positionDataRef,
                     nodeConfig={nodeConfig}
                     showCornerLabels={showCornerLabels}
                     positionMode={positionMode}
+                    selectedNodeId={selectedNodeId}
                 />
             </Canvas>
 

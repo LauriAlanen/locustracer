@@ -13,7 +13,7 @@ const CORNERS = [
 
 const HOST = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8009`;
 
-export function NodePositionEditor({ telemetryData, onSaved }) {
+export function NodePositionEditor({ telemetryData, onSaved, sendIdentify, onSelectNode, selectedNodeId }) {
     const [cornerAssignments, setCornerAssignments] = useState({
         'top-left': '', 'top-right': '', 'bottom-left': '', 'bottom-right': '',
     });
@@ -60,6 +60,17 @@ export function NodePositionEditor({ telemetryData, onSaved }) {
             .catch(() => {});
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+    useEffect(() => {
+        if (!selectedNodeId || !sendIdentify) return;
+        
+        sendIdentify(selectedNodeId);
+        const interval = setInterval(() => {
+            sendIdentify(selectedNodeId);
+        }, 2000);
+        
+        return () => clearInterval(interval);
+    }, [selectedNodeId, sendIdentify]);
+
     const handleCornerChange = useCallback((cornerId, ip) => {
         setCornerAssignments(prev => {
             const updated = { ...prev };
@@ -67,7 +78,12 @@ export function NodePositionEditor({ telemetryData, onSaved }) {
             updated[cornerId] = ip;
             return updated;
         });
-    }, []);
+        if (ip && onSelectNode) {
+            onSelectNode(ip);
+        } else if (!ip && onSelectNode) {
+            onSelectNode(null);
+        }
+    }, [onSelectNode]);
 
     const handleSave = useCallback(async () => {
         const nodes = CORNERS
@@ -146,6 +162,7 @@ export function NodePositionEditor({ telemetryData, onSaved }) {
                             <select
                                 value={assignedIp}
                                 onChange={e => handleCornerChange(corner.id, e.target.value)}
+                                onFocus={() => assignedIp && onSelectNode && onSelectNode(assignedIp)}
                                 style={selectStyle(isRef)}
                             >
                                 <option value="">— unassigned —</option>

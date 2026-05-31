@@ -164,6 +164,9 @@ To enable accurate monitoring and intuitive debugging of real-time acoustic even
   - It casts dynamic 3D point lights in the environment.
   - Standard error and Time Difference of Arrival (TDOA) signal weight lines are dynamically rendered, linking the sound source directly to the active listening nodes.
 
+- **Hardware Identification & Selection**
+  When a node is selected in the Node Position Editor, it visually pulses white in the 3D map. Simultaneously, the frontend repeatedly sends `identify` WebSocket commands to the backend, causing the corresponding physical node's onboard LED to actively blink. This seamlessly bridges the virtual and physical environments to assist with hardware setup.
+
 - **Interactive UI Controls**
   Users can customize their view in real-time using simple dashboard toggles:
   - **TDOA Engine Toggle**: Switches the visualizer's localization logic between the highly accurate backend **C++ GCC-PHAT** algorithm and the lightweight **Frontend RMS** estimation engine.
