@@ -2,6 +2,9 @@
 
 Locustracer is a Time Difference of Arrival (TDOA) acoustic tracking system. The project features a distributed hardware-software architecture designed to precisely synchronize audio streams across multiple devices and accurately estimate the location of acoustic sources.
 
+## Video Demo
+https://github.com/user-attachments/assets/c3c5977e-926f-4135-a996-926d404716cf
+
 ## System Overview
 
 Locustracer consists of several core components working in tandem:
