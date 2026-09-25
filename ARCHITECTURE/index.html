@@ -1,0 +1,863 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation for the Locustracer TDOA system">
+      
+      
+      
+      
+        <link rel="prev" href="..">
+      
+      
+        <link rel="next" href="../API/">
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.6">
+    
+    
+      
+        <title>Architecture - Locustracer Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.558e4712.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.2505c338.min.css">
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#locustracer-architecture" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Locustracer Docs" class="md-header__button md-logo" aria-label="Locustracer Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Locustracer Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Architecture
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      <form class="md-header__option" data-md-component="palette">
+        
+          
+          <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent=""  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+          
+            <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z"/></svg>
+            </label>
+          
+        
+          
+          <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent=""  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+          
+            <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12c0-2.42-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z"/></svg>
+            </label>
+          
+        
+      </form>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Locustracer Docs" class="md-nav__button md-logo" aria-label="Locustracer Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    Locustracer Docs
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Architecture
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Architecture
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    Overview
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-flow-diagram" class="md-nav__link">
+    Data Flow Diagram
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#udp-audio-data-paths" class="md-nav__link">
+    UDP Audio Data Paths
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#telemetry-flow" class="md-nav__link">
+    Telemetry Flow
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sequence-diagram-tsf-sync-and-audio-transmission" class="md-nav__link">
+    Sequence Diagram: TSF Sync and Audio Transmission
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#c-backend-tdoa-pipeline" class="md-nav__link">
+    C++ Backend TDOA Pipeline
+  </a>
+  
+    <nav class="md-nav" aria-label="C++ Backend TDOA Pipeline">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#audio-synchronization-and-jitter-buffer-routing" class="md-nav__link">
+    Audio Synchronization and Jitter Buffer Routing
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#localization-engine-gcc-phat-gauss-newton" class="md-nav__link">
+    Localization Engine (GCC-PHAT &amp; Gauss-Newton)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#c-server-logging" class="md-nav__link">
+    C++ Server Logging
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#digital-twin-simulation" class="md-nav__link">
+    Digital Twin Simulation
+  </a>
+  
+    <nav class="md-nav" aria-label="Digital Twin Simulation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#native-execution-and-pre-start-cleanup" class="md-nav__link">
+    Native Execution and Pre-start Cleanup
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#simulation-physics-and-specifications" class="md-nav__link">
+    Simulation Physics and Specifications
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dynamic-control-and-auto-configuration" class="md-nav__link">
+    Dynamic Control and Auto-Configuration
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3d-room-visualization-and-spatial-mapping" class="md-nav__link">
+    3D Room Visualization and Spatial Mapping
+  </a>
+  
+    <nav class="md-nav" aria-label="3D Room Visualization and Spatial Mapping">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-components" class="md-nav__link">
+    Key Components
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../API/" class="md-nav__link">
+        API
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../firmware/README.md" class="md-nav__link">
+        Firmware
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5" tabindex="0" aria-expanded="false">
+          Agentic Workflow
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Agentic Workflow" data-md-level="1">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Agentic Workflow
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../AGENTS.md" class="md-nav__link">
+        Agents
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../SKILL.md" class="md-nav__link">
+        Skill
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    Overview
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-flow-diagram" class="md-nav__link">
+    Data Flow Diagram
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#udp-audio-data-paths" class="md-nav__link">
+    UDP Audio Data Paths
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#telemetry-flow" class="md-nav__link">
+    Telemetry Flow
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sequence-diagram-tsf-sync-and-audio-transmission" class="md-nav__link">
+    Sequence Diagram: TSF Sync and Audio Transmission
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#c-backend-tdoa-pipeline" class="md-nav__link">
+    C++ Backend TDOA Pipeline
+  </a>
+  
+    <nav class="md-nav" aria-label="C++ Backend TDOA Pipeline">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#audio-synchronization-and-jitter-buffer-routing" class="md-nav__link">
+    Audio Synchronization and Jitter Buffer Routing
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#localization-engine-gcc-phat-gauss-newton" class="md-nav__link">
+    Localization Engine (GCC-PHAT &amp; Gauss-Newton)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#c-server-logging" class="md-nav__link">
+    C++ Server Logging
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#digital-twin-simulation" class="md-nav__link">
+    Digital Twin Simulation
+  </a>
+  
+    <nav class="md-nav" aria-label="Digital Twin Simulation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#native-execution-and-pre-start-cleanup" class="md-nav__link">
+    Native Execution and Pre-start Cleanup
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#simulation-physics-and-specifications" class="md-nav__link">
+    Simulation Physics and Specifications
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dynamic-control-and-auto-configuration" class="md-nav__link">
+    Dynamic Control and Auto-Configuration
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3d-room-visualization-and-spatial-mapping" class="md-nav__link">
+    3D Room Visualization and Spatial Mapping
+  </a>
+  
+    <nav class="md-nav" aria-label="3D Room Visualization and Spatial Mapping">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-components" class="md-nav__link">
+    Key Components
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="locustracer-architecture">Locustracer Architecture</h1>
+<p>This document outlines the architecture of the Locustracer system, detailing the interactions between the Firmware, C++ Server, and Node.js components.</p>
+<h2 id="overview">Overview</h2>
+<p>The system relies on a Master/Listener node topology, which can also be simulated via a Digital Twin:
+- <strong>Master Node (e.g. S2 Mini)</strong>: Has Temperature/Humidity sensors, a Buzzer, and acts as the central timekeeper.
+- <strong>Listener Node (e.g. XIAO ESP32S3, DevKitC)</strong>: Has I2S Microphones to capture audio.
+- <strong>Digital Twin (Native Python)</strong>: A Pyroomacoustics simulation that acts as virtual listener nodes and acoustic environments.</p>
+<p>The data flow spans across:
+1. <strong>UDP Audio Path (High Frequency)</strong>: Audio packets are sent from Listener nodes via UDP to the C++ Server, jitter-buffered, and forwarded to the Node.js backend. The C++ UDP server (ports <code>5006</code>, <code>5011</code>) utilizes <code>SO_REUSEADDR</code> and <code>SO_REUSEPORT</code> for robust process restarts.
+2. <strong>WebSocket Telemetry Flow (Low Frequency)</strong>: ESP32 nodes connect directly to the Node.js backend to report telemetry and receive configuration/commands.</p>
+<h2 id="data-flow-diagram">Data Flow Diagram</h2>
+<pre class="mermaid"><code>flowchart TD
+    %% Firmware Nodes
+    subgraph Firmware["Firmware (ESP32)"]
+        MasterNode["Master Node\n(SHTC3, Buzzer)"]
+        ListenerNode["Listener Node\n(I2S Mic)"]
+    end
+
+    %% Digital Twin
+    subgraph Simulation["Simulation"]
+        TwinProcess["Digital Twin\n(Pyroomacoustics)"]
+    end
+
+    %% C++ Server
+    subgraph CPPServer["C++ System Server"]
+        UDPServer["UDP Server\n(Port 5006)"]
+        JitterBuffer["Jitter Buffer"]
+    end
+
+    %% Node.js Monitor App
+    subgraph MonitorApp["Node.js Monitor App"]
+        BackendUDP["Backend UDP Listener\n(Port 5008)"]
+        BackendHTTP["Express REST &amp; WebSocket\n(Port 8009)"]
+    end
+
+    %% UI
+    ReactUI["React UI (Frontend)"]
+
+    %% Audio Data Flow (UDP)
+    ListenerNode -- "Audio UDP Packet\n(SeqID, TSF, Samples)" --&gt; UDPServer
+    TwinProcess -- "Mock Audio UDP Packet" --&gt; UDPServer
+    UDPServer -- "Pushes Packets" --&gt; JitterBuffer
+    JitterBuffer -- "Forwarded Aligned Packets" --&gt; BackendUDP
+    BackendUDP -- "Streams Audio Arrays (~60FPS)" --&gt; ReactUI
+
+    %% Telemetry &amp; Config Flow (WebSockets &amp; REST)
+    MasterNode -- "WS Telemetry (Temp/Hum)" --&gt; BackendHTTP
+    ListenerNode -- "WS Telemetry (CPU)" --&gt; BackendHTTP
+    TwinProcess -- "WS Mock Telemetry" --&gt; BackendHTTP
+    BackendHTTP -- "WS Config / Commands" --&gt; MasterNode
+    BackendHTTP -- "WS Config / Commands" --&gt; ListenerNode
+
+    BackendHTTP -- "WS State / Stats (~60FPS)" --&gt; ReactUI
+    ReactUI -- "UI Actions (Beep/Identify)" --&gt; BackendHTTP
+    ReactUI -- "Simulation Config &amp; Toggle" --&gt; BackendHTTP
+    BackendHTTP -- "Proxies Config (Port 8010)" --&gt; TwinProcess
+    BackendHTTP -- "Auto-Configures Nodes (UDP 5011)" --&gt; CPPServer</code></pre>
+<h2 id="udp-audio-data-paths">UDP Audio Data Paths</h2>
+<ol>
+<li>The <strong>Firmware Listener Nodes</strong> (or the <strong>Digital Twin Simulation</strong>) capture audio at 48KHz using I2S (or simulate it) and package 256 samples per packet.</li>
+<li>The packet (with a Sequence ID and filtered TSF time) is sent to the <strong>C++ Server</strong> on UDP port <code>5006</code>.</li>
+<li>The <strong>C++ Server</strong> uses a <code>JitterBuffer</code> to reorder packets, mitigate network jitter, and drop delayed packets. It forwards aligned stream chunks to the Node.js Backend over <code>127.0.0.1:5008</code>.</li>
+<li>The <strong>Node.js UDP Listener</strong> updates system statistics (drift, packet loss, bandwidth) and buffers the audio. It broadcasts these arrays at ~60FPS to the connected React UI clients over WebSockets.</li>
+</ol>
+<h2 id="telemetry-flow">Telemetry Flow</h2>
+<ul>
+<li>Every ESP32 node runs an <code>api_client</code> task that connects via WebSocket (<code>/ws</code>) to the Node.js backend. Similarly, the <strong>Digital Twin</strong> process establishes a WebSocket connection for its simulated nodes.</li>
+<li>Nodes send JSON telemetry including <code>node_id</code>, <code>node_type</code>, <code>temperature</code>, <code>humidity</code>, and <code>cpu_temp</code> every 5 seconds.</li>
+<li>The Node.js backend sends down configurations (like <code>buzzer_volume</code> or commands like <code>buzzer_mode</code>). The Digital Twin process also listens to toggles and updates over REST/WebSockets.</li>
+</ul>
+<h2 id="sequence-diagram-tsf-sync-and-audio-transmission">Sequence Diagram: TSF Sync and Audio Transmission</h2>
+<pre class="mermaid"><code>sequenceDiagram
+    participant Mic as I2S Microphone
+    participant ESP as ESP32 Firmware
+    participant Cpp as C++ Server (Port 5006)
+    participant Node as Node.js Backend
+    participant UI as React UI
+
+    ESP-&gt;&gt;ESP: Update WiFi TSF Timer
+    loop Every 256 Samples
+        Mic-&gt;&gt;ESP: I2S DMA Buffer Read
+        ESP-&gt;&gt;ESP: Apply TSF Filter / Jitter compensation
+        ESP-&gt;&gt;Cpp: UDP AudioPacket (SeqID, TSF, 256 Samples)
+    end
+
+    loop Every 2ms
+        Cpp-&gt;&gt;Cpp: Process JitterBuffers (Reorder &amp; Align)
+        Cpp-&gt;&gt;Node: UDP Forwarded Audio (IP header + Packet)
+    end
+
+    loop Every 16.6ms (~60FPS)
+        Node-&gt;&gt;UI: WS Broadcast (Audio Arrays &amp; TSF Variance)
+    end
+    end</code></pre>
+<h2 id="c-backend-tdoa-pipeline">C++ Backend TDOA Pipeline</h2>
+<p>The real-time sound source localization is achieved using a robust Time Difference of Arrival (TDOA) pipeline natively executed within the C++ Server. </p>
+<h3 id="audio-synchronization-and-jitter-buffer-routing">Audio Synchronization and Jitter Buffer Routing</h3>
+<p>To prevent sample drift and ensure perfect time-alignment across streams, the TDOA pipeline is routed directly through the UDP Server's <code>JitterBuffer</code>. The incoming packets from either the physical hardware nodes or the Digital Twin are ingested via UDP, and the <code>AudioSynchronizer</code> applies a Phase-Locked Loop (PLL) to smooth out hardware TSF clock jitter. By buffering and perfectly aligning the 48kHz audio streams, the pipeline avoids cross-correlation drift.</p>
+<h3 id="localization-engine-gcc-phat-gauss-newton">Localization Engine (GCC-PHAT &amp; Gauss-Newton)</h3>
+<p>Once the multi-channel streams are aligned, the pipeline processes the data through two primary mathematical stages:
+1. <strong>GCC-PHAT Cross-Correlation</strong>: The Generalized Cross-Correlation with Phase Transform (GCC-PHAT) is computed for each pair of microphones against a designated reference node. This calculates the precise time-delay (<code>tau</code>) between the arriving audio signals.
+2. <strong>Gauss-Newton Optimization</strong>: The resulting delay measurements are passed into a non-linear <code>PositionSolver</code>. The solver utilizes Gauss-Newton optimization to iteratively minimize the error between the expected time delays (based on current position guesses) and the measured time delays. It continues iterating until it converges on the highly precise X, Y spatial coordinates of the sound source.</p>
+<p>This pure mathematical approach successfully tracks dynamic acoustic events, such as transient acoustic "snaps", with high accuracy in real-time.</p>
+<h3 id="c-server-logging">C++ Server Logging</h3>
+<p>To prevent excessive terminal spam while running the continuous GCC-PHAT engine at ~60 FPS, the C++ server suppresses frame-by-frame debug output by default. It only logs the final <code>[Position] Estimated Location:</code> when a sound event triggers the localization engine.</p>
+<p>If you are developing the tracking algorithm or need raw GCC-PHAT / TDOA matrices, you can enable verbose output by setting the <code>VERBOSE_LOGS=1</code> environment variable when running the system (e.g., within <code>docker-compose.yml</code>).</p>
+<h2 id="digital-twin-simulation">Digital Twin Simulation</h2>
+<p>The system includes a Python-based Digital Twin built with Pyroomacoustics (<code>application/simulations/digital_twin_server.py</code>) that acts as a virtual drop-in replacement for the physical hardware nodes.</p>
+<h3 id="native-execution-and-pre-start-cleanup">Native Execution and Pre-start Cleanup</h3>
+<p>The simulation is natively executed via the <code>./locustracer.sh start</code> script. During boot:
+- <strong>Environment Management</strong>: The script automatically checks for a Python virtual environment (<code>.venv</code>). If it is missing, it will create it and install all required dependencies from <code>application/simulations/requirements_sim.txt</code>.
+- <strong>Pre-start Cleanup</strong>: To prevent port collisions and ensure a clean boot state, <code>locustracer.sh start</code> preemptively kills any dangling native processes (e.g., old instances of <code>cpp_server</code>, <code>vite</code>, and <code>digital_twin_server.py</code>) before booting the services.</p>
+<h3 id="simulation-physics-and-specifications">Simulation Physics and Specifications</h3>
+<ul>
+<li><strong>Simulated Environment</strong>: Models a room precisely sized at <strong>4.0m x 3.5m</strong>.</li>
+<li><strong>Sample Rate</strong>: The simulation engine operates at <strong>48,000Hz</strong>, perfectly matching the ESP32 hardware I2S capture frequency for seamless C++ server compatibility.</li>
+<li><strong>Sensor Noise Modeling</strong>: A <strong>-40dB</strong> white noise floor is continuously injected into the virtual microphones to accurately simulate the characteristics of physical MEMS sensors.</li>
+<li><strong>Clock Drift Emulation</strong>: To simulate independent hardware clock inaccuracies, the simulation injects <strong>±200µs</strong> of independent random jitter into the TSF timestamps for each virtual node.</li>
+<li><strong>Transient Snapping Mode</strong>: By default, the simulation operates in a "Transient Snapping" mode. It randomly teleports the virtual sound source within the room and plays a highly realistic acoustic "snap" (a short burst of exponentially decaying pink noise) every 1 to 3 seconds. This replaces the legacy continuous orbital movement mode.</li>
+</ul>
+<h3 id="dynamic-control-and-auto-configuration">Dynamic Control and Auto-Configuration</h3>
+<ul>
+<li><strong>Dynamic Configuration</strong>: The React frontend provides a <strong>Simulation Config</strong> pane with auto-saving sliders to dynamically adjust parameters like <code>gain</code> and <code>noise_amplitude</code> (legacy parameters <code>source_speed</code> and <code>source_radius</code> remain in the payload but are inactive). The Node.js Express server proxies these API calls directly to the Python Digital Twin on port <code>8010</code>.</li>
+<li><strong>Auto-Configuration</strong>: When the simulation is activated via the UI, the Node.js backend automatically overrides the active physical node mapping. It populates <code>POST /nodes/config</code> with the simulation IPs (<code>127.0.0.2</code> - <code>127.0.0.5</code>), mapping them to the corners of the 4.0m x 3.5m simulated room. This layout is immediately forwarded to the C++ server via UDP port <code>5011</code>.</li>
+</ul>
+<h2 id="3d-room-visualization-and-spatial-mapping">3D Room Visualization and Spatial Mapping</h2>
+<p>To enable accurate monitoring and intuitive debugging of real-time acoustic events, the frontend includes a high-fidelity visualizer that models the physical deployment environment.</p>
+<h3 id="key-components">Key Components</h3>
+<ul>
+<li>
+<p><strong>Vaasa Wapice HQ (Alfa Room) Modeling</strong>
+  The visualizer represents the actual physical <strong>Alfa Room</strong> at Vaasa Wapice HQ, which has dimensions of <strong>4.0m × 3.5m × 3.4m</strong>.</p>
+</li>
+<li>
+<p><strong>High-Fidelity 3D Environment</strong>
+  Built using <strong>React Three Fiber</strong> and <strong>Three.js</strong>, the 3D environment features:</p>
+</li>
+<li>Exact scale-modeled boundaries (walls, floor, and ceiling).</li>
+<li>Frosted glass windows and standard ceiling T-grids at <strong>2.70m</strong>.</li>
+<li>
+<p>Scale models of physical room furniture (such as a conference table and a chest of drawers) to maintain precise contextual reference.</p>
+</li>
+<li>
+<p><strong>Physical Boundary Node Mapping</strong>
+  Instead of utilizing abstract circular patterns, the listener and master nodes are mapped directly along the physical boundaries (walls) of the modeled room. This arrangement perfectly mirrors their actual deployment coordinates inside the physical lab.</p>
+</li>
+<li>
+<p><strong>Constrained Sound Source Localization</strong>
+  Dynamic, real-time localized sound source estimation is strictly constrained to the physical boundaries of the room. When a sound source is localized:</p>
+</li>
+<li>It casts dynamic 3D point lights in the environment.</li>
+<li>
+<p>Standard error and Time Difference of Arrival (TDOA) signal weight lines are dynamically rendered, linking the sound source directly to the active listening nodes.</p>
+</li>
+<li>
+<p><strong>Hardware Identification &amp; Selection</strong>
+  When a node is selected in the Node Position Editor, it visually pulses white in the 3D map. Simultaneously, the frontend repeatedly sends <code>identify</code> WebSocket commands to the backend, causing the corresponding physical node's onboard LED to actively blink. This seamlessly bridges the virtual and physical environments to assist with hardware setup.</p>
+</li>
+<li>
+<p><strong>Interactive UI Controls</strong>
+  Users can customize their view in real-time using simple dashboard toggles:</p>
+</li>
+<li><strong>TDOA Engine Toggle</strong>: Switches the visualizer's localization logic between the highly accurate backend <strong>C++ GCC-PHAT</strong> algorithm and the lightweight <strong>Frontend RMS</strong> estimation engine.</li>
+<li><strong>Axes Indicators</strong>: Show or hide 3D spatial coordinate axes helper (X, Y, Z).</li>
+<li><strong>Floor Grids</strong>: Toggle floor grid overlays for precise spatial estimation.</li>
+<li><strong>Room Info</strong>: Toggle context overlays showing physical room metrics and active system configurations.</li>
+</ul>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.e5c33ebb.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.51d95adb.min.js"></script>
+      
+    
+  </body>
+</html>
